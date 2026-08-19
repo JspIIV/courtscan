@@ -1,0 +1,34 @@
+{
+  "name": "Courtscan",
+  "what": "Every verdict on GenLayer, and whether it actually stands",
+  "network": "GenLayer Asimov testnet",
+  "chain_id": 4221,
+  "rpc": "https://rpc-asimov.genlayer.com",
+  "consensus_contract": "0x6CAFF6769d70824745AD895663409DC70aB5B28E",
+  "assay": {
+    "contract": "contracts/assay.py",
+    "class": "Assay",
+    "address": "0xbaBf2796De591Dfe9289b60bE68f4426449676fA",
+    "explorer": "https://explorer-asimov.genlayer.com/address/0xbaBf2796De591Dfe9289b60bE68f4426449676fA",
+    "what": "runs controlled consensus rounds so the point where agreement stops can be measured rather than guessed at",
+    "consensus_round": "probe: STRICT uses gl.vm.run_nondet_unsafe with a custom validator comparing exactly the bound fields; COMPARATIVE describes the same condition in a principle string, so the two can be compared"
+  },
+  "the_round_that_makes_the_case": {
+    "id": "0x938a593d62056696702c5db81a7f61c487a970ddfc4f1eece34e676062d21545",
+    "reads_on_the_explorer_as": "FINALIZED",
+    "actually": "result TIMEOUT, the leader's answer discarded, nothing decided",
+    "leader_said": "{\"ok\": true, \"decision\": \"WARN\", \"precedent\": \"none\", \"holding\": \"An agent must not exceed its weekly budget...\"}"
+  },
+  "measured": {
+    "network_agreement_rate": "about 99.7% over a sampled window of blocks",
+    "size_axis": "12000 characters with one bound field agreed, so payload size alone did not break agreement up to the contract's ceiling",
+    "correction": "the project began on the belief that size was the lever, from a contract that timed out at 8000 characters. The measurement did not support it; that contract bound three fields and carried a decision history, so binding is the likelier lever and is what is being measured now"
+  },
+  "asymmetry": "a round that agreed wrote itself into the contract and cannot be faked; a round that failed had its state change discarded, so it is attested afterwards with a transaction hash anybody can check",
+  "needs_no_wallet": [
+    "looking up any round or contract",
+    "the live feed of recent rounds",
+    "the sampled agreement rate",
+    "the laboratory frontier"
+  ]
+}

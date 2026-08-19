@@ -1,0 +1,95 @@
+:root {
+  --ink: #12161b;
+  --muted: #64717f;
+  --line: #e3e8ee;
+  --bg: #f7f9fc;
+  --card: #ffffff;
+  --accent: #1668dc;
+  --good: #0f7b52;
+  --bad: #b4232c;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+main { max-width: 940px; margin: 0 auto; padding: 40px 22px 80px; }
+header { margin-bottom: 28px; }
+h1 { font-size: 40px; letter-spacing: -0.03em; margin: 0 0 6px; }
+h2 { font-size: 20px; margin: 38px 0 8px; letter-spacing: -0.01em; }
+.lede { color: var(--muted); font-size: 18px; margin: 0; max-width: 62ch; }
+.intro p { max-width: 68ch; }
+.note { color: var(--muted); font-size: 14.5px; max-width: 72ch; margin: 0 0 12px; }
+.loading { color: var(--muted); }
+.muted { color: var(--muted); }
+.good { color: var(--good); font-weight: 600; }
+.bad { color: var(--bad); font-weight: 600; }
+
+.strip {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px;
+  background: var(--line); border: 1px solid var(--line); border-radius: 12px;
+  overflow: hidden; margin: 26px 0;
+}
+.strip div { background: var(--card); padding: 14px 16px; }
+.strip span { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.strip b { font-size: 22px; }
+
+.caution {
+  background: #fff8e6; color: #7a5600; border: 1px solid #f2e2b8;
+  padding: 14px 16px; border-radius: 10px; font-size: 14.5px; max-width: 72ch;
+}
+
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+table { width: 100%; border-collapse: collapse; min-width: 640px; }
+th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); font-size: 14px; vertical-align: top; }
+th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; }
+tr:last-child td { border-bottom: 0; }
+
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+pre {
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  padding: 14px 16px; overflow-x: auto; font-size: 13.5px;
+}
+pre code { font-size: 13.5px; }
+.fields { color: var(--muted); font-size: 14.5px; max-width: 60ch; }
+.fields li { margin-bottom: 4px; }
+a { color: var(--accent); }
+footer {
+  margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--line);
+  font-size: 13.5px; color: var(--muted);
+}
+
+@media (max-width: 620px) {
+  main { padding: 26px 16px 60px; }
+  h1 { font-size: 30px; }
+}
+
+/* Courtscan additions: lookup, round cards, outcome badges. */
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 12px 0; }
+input {
+  font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px;
+  background: var(--card); flex: 1; min-width: 280px;
+}
+input:focus { outline: 2px solid #cfe2ff; border-color: var(--accent); }
+button.act {
+  font: inherit; padding: 10px 18px; border-radius: 9px; cursor: pointer;
+  border: 1px solid var(--accent); background: var(--accent); color: #fff;
+}
+button.act:hover { filter: brightness(1.06); }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; margin: 14px 0; }
+.badge {
+  display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .04em;
+  padding: 4px 10px; border-radius: 999px; background: var(--bg);
+}
+.badge.good { background: #e9f6ef; color: var(--good); }
+.badge.bad { background: #fdecec; color: var(--bad); }
+.badge.warn { background: #fff4e5; color: #a05a00; }
+.badge.muted { background: var(--bg); color: var(--muted); }
+.meaning { margin: 10px 0 14px; font-size: 15px; }
+.warn { color: #a05a00; font-weight: 600; }
+
+dl { display: grid; grid-template-columns: 150px 1fr; gap: 6px 14px; margin: 0; font-size: 14px; }
+dt { color: var(--muted); }
+dd { margin: 0; word-break: break-all; }
+@media (max-width: 620px) { dl { grid-template-columns: 1fr; } dt { margin-top: 8px; } }
