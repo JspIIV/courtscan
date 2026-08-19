@@ -183,20 +183,36 @@ async function showRound(id) {
 
 let snapshot = null;
 
+// Every round this page has decoded, from the sample and from the live scan
+// both. A contract clicked in the live feed has to resolve to something: it was
+// on screen a moment ago, and sending the reader to a page that says "address
+// not found" because the sample happened not to cover it is a worse answer than
+// no link at all.
+const seenRounds = [];
+const remember = (rows) => {
+  for (const r of rows) if (!seenRounds.some((x) => x.id === r.id)) seenRounds.push(r);
+};
+
 async function showContract(address) {
-  const rows = (snapshot?.rounds || []).filter(
-    (r) => r.contract.toLowerCase() === address.toLowerCase());
+  const rows = seenRounds.filter((r) => r.contract.toLowerCase() === address.toLowerCase());
   if (!rows.length) {
-    el('result').innerHTML = `<div class="verdict"><p class="muted">No rounds against that contract
-      in the current sample, which covers ${snapshot?.blocks_scanned ?? 0} blocks. That means
-      "not in that window", never "never". A round id can always be looked up directly.</p></div>`;
+    el('result').innerHTML = `<div class="verdict"><p class="muted">Nothing against
+      <code>${esc(address)}</code> among the rounds this page has decoded, which is the sample of
+      ${snapshot?.blocks_scanned ?? 0} blocks plus the last 150. That means "not in what was
+      looked at", never "never". A round id can always be looked up directly.</p></div>`;
     return;
   }
   const agreed = rows.filter((r) => r.outcome === 'AGREED').length;
   el('result').innerHTML = `
     <div class="verdict">
-      <p class="meaning"><strong>${rows.length}</strong> round(s) in the sample,
-        <strong>${agreed}</strong> agreed.</p>
+      <p class="meaning"><code>${esc(address)}</code><br />
+        <strong>${rows.length}</strong> round(s) among what this page has decoded,
+        <strong>${agreed}</strong> of them agreed.</p>
+      <p class="hint">The official explorer does not have a page for every Intelligent Contract,
+        so <a href="${EXPLORER}/address/${esc(address)}" target="_blank" rel="noreferrer">its page
+        there</a> may report the address as not found. That is the explorer's index, not a
+        statement about the contract: every address here was read from a round the chain
+        returned.</p>
       <div class="scroll"><table>
         <thead><tr><th>Outcome</th><th>Round</th><th>What the leader said</th></tr></thead>
         <tbody>${rows.map((r) => `
@@ -207,6 +223,19 @@ async function showContract(address) {
           </tr>`).join('')}</tbody>
       </table></div>
     </div>`;
+}
+
+// Contract cells are links that stay here rather than leaving for an explorer
+// that may not know the address.
+function wireContractLinks() {
+  for (const link of document.querySelectorAll('a[data-contract]')) {
+    link.onclick = (e) => {
+      e.preventDefault();
+      el('q').value = link.dataset.contract;
+      showContract(link.dataset.contract);
+      el('q').scrollIntoView({ block: 'center', behavior: 'smooth' });
+    };
+  }
 }
 
 function lookup() {
@@ -230,6 +259,7 @@ el('example').onclick = (e) => {
 
 (async () => {
   try { snapshot = await (await fetch('/sample.json')).json(); } catch { /* optional */ }
+  if (snapshot?.rounds) remember(snapshot.rounds);
 
   // ---- cards --------------------------------------------------------------
   const rate = snapshot?.agreement_rate;
@@ -283,6 +313,9 @@ el('example').onclick = (e) => {
         }
       } catch { /* most topics are not round ids */ }
     }
+    remember(found.map((f) => ({
+      id: f.id, contract: f.tx.recipient, outcome: f.outcome, leader_said: leaderSaid(f.tx),
+    })));
     el('live').className = '';
     el('live').innerHTML = found.length ? `
       <div class="scroll"><table>
@@ -290,13 +323,14 @@ el('example').onclick = (e) => {
         <tbody>${found.map((f) => `
           <tr>
             <td><span class="pill ${TONE[f.outcome] || 'muted'}">${esc(f.outcome)}</span></td>
-            <td><a href="${EXPLORER}/address/${esc(f.tx.recipient)}" target="_blank" rel="noreferrer">${esc(short(f.tx.recipient))}</a></td>
+            <td><a href="#" data-contract="${esc(f.tx.recipient)}">${esc(short(f.tx.recipient))}</a></td>
             <td><a href="${EXPLORER}/tx/${esc(f.id)}" target="_blank" rel="noreferrer">${esc(short(f.id))}</a></td>
             <td class="muted">${esc(f.tx.numOfInitialValidators || 0)}</td>
             <td class="said">${esc(leaderSaid(f.tx).slice(0, 70)) || '<span class="dim">not in the outputs</span>'}</td>
           </tr>`).join('')}</tbody>
       </table></div>`
       : '<p class="loading">No rounds in the last 150 blocks. The network is quiet just now.</p>';
+    wireContractLinks();
   } catch (e) {
     el('live').className = '';
     el('live').innerHTML = `<p class="loading bad">Could not scan recent blocks: ${esc(e.message)}</p>`;
