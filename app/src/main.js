@@ -1,97 +1,23 @@
-// Courtscan, the page.
+// Courtscan.
 //
-// Laid out as an explorer, because that is what somebody arriving here is
-// looking for: a box to paste a round id into. It sits at the top and is the
-// largest thing on the page. Everything below it is context for the answer.
+// A case record, not a transaction record. Somebody arriving with a hash wants
+// to know who brought it, what they asked for, what the leader proposed, how
+// each validator voted, and how it ended. All of that is on chain and none of
+// it is put together anywhere.
 //
-// Two rules the whole project rests on.
-//
-// A stranger with no wallet, no account and no GEN gets the answer they came
-// for in the time the page takes to load. Everything here is a read.
-//
-// And a verdict is never shown as standing unless it stands. An explorer will
-// show you a finalised transaction and let you conclude a decision was made.
-// Sometimes it was not: the leader answered, the validators ran out of time,
-// and the answer was discarded while the transaction finalised perfectly
-// happily. Those two look identical elsewhere and are opposite here.
+// Two rules underneath it. A stranger with no wallet, no account and no GEN
+// gets their answer in the time the page takes to load, because everything is a
+// read. And a verdict is never shown as standing unless it stands: a round can
+// finalise perfectly happily with its answer thrown away, and those two cases
+// look identical everywhere else.
 import './style.css';
-import { createClient } from 'genlayer-js';
-import { testnetAsimov } from 'genlayer-js/chains';
+import {
+  ASSAY, CONSENSUS, EXAMPLE, REPO, client, classify, el, esc, handlers,
+  leaderSaid, MEANING, readCall, remember, rpc, seenRounds, short, TONE, wireLinks,
+} from './lib.js';
+import { showRound } from './round.js';
 
-const RPC = 'https://rpc-asimov.genlayer.com';
-const CONSENSUS = '0x6CAFF6769d70824745AD895663409DC70aB5B28E';
-const EXPLORER = 'https://explorer-asimov.genlayer.com';
-const ASSAY = '0xbaBf2796De591Dfe9289b60bE68f4426449676fA';
-const REPO = 'https://github.com/JspIIV/courtscan';
-
-// The round that makes the case, offered as an example so nobody has to go
-// looking for one: it reads as FINALIZED on the official explorer and decided
-// nothing at all.
-const EXAMPLE = '0x938a593d62056696702c5db81a7f61c487a970ddfc4f1eece34e676062d21545';
-
-const client = createClient({ chain: testnetAsimov });
-
-const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => (
-  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const short = (s) => (s ? `${String(s).slice(0, 10)}…${String(s).slice(-6)}` : '');
-const el = (id) => document.getElementById(id);
-
-async function rpc(method, params) {
-  const res = await fetch(RPC, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
-  });
-  const body = await res.json();
-  if (body.error) throw new Error(body.error.message);
-  return body.result;
-}
-
-// The classification the whole project turns on. The node reports three
-// separate things about a round and no one of them says whether a decision
-// stands.
-function classify(tx) {
-  const status = String(tx.statusName || '');
-  const result = String(tx.resultName || '');
-  const execution = String(tx.txExecutionResultName || '');
-  if (result === 'TIMEOUT') return 'TIMED_OUT';
-  if (execution === 'NOT_VOTED') return 'NOT_VOTED';
-  if (execution === 'FINISHED_WITH_ERROR') return 'ERRORED';
-  if (result === 'AGREE' || execution === 'FINISHED_WITH_RETURN') return 'AGREED';
-  if (status === 'PENDING' || status === 'ACTIVATED' || status === '') return 'IN_FLIGHT';
-  return 'OTHER';
-}
-
-const MEANING = {
-  AGREED: 'The validators agreed. This decision stands.',
-  TIMED_OUT: 'The leader answered and the validators did not finish in time. The answer was discarded, so nothing was decided.',
-  NOT_VOTED: 'The round was accepted and never voted on.',
-  ERRORED: 'The round ran and ended in an error.',
-  IN_FLIGHT: 'Still settling.',
-  OTHER: 'The node reported something this page does not recognise.',
-};
-const TONE = {
-  AGREED: 'good', TIMED_OUT: 'bad', ERRORED: 'bad',
-  NOT_VOTED: 'warn', IN_FLIGHT: 'muted', OTHER: 'muted',
-};
-
-function leaderSaid(tx) {
-  const hex = String(tx.eqBlocksOutputs || '');
-  if (hex.length < 12) return '';
-  let text = '';
-  try {
-    const bytes = new Uint8Array(hex.slice(2).match(/.{1,2}/g).map((b) => parseInt(b, 16)));
-    text = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
-  } catch { return ''; }
-  const a = text.indexOf('{');
-  const b = text.lastIndexOf('}');
-  if (a < 0 || b <= a) return '';
-  // eslint-disable-next-line no-control-regex
-  const slice = text.slice(a, b + 1).replace(/[^ -~]+/g, ' ').trim();
-  // The outputs are padded and the padding decodes to plausible looking words.
-  // Printing one under "what the leader said" would be putting words in its
-  // mouth, which is the exact failure this page exists to expose.
-  return slice.length < 12 ? '' : slice;
-}
+let snapshot = null;
 
 const app = document.createElement('main');
 document.body.append(app);
@@ -104,17 +30,18 @@ app.innerHTML = `
   </div>
 
   <section class="hero">
+    <p class="eyebrow">A case record, not a transaction</p>
     <h1>Every verdict on GenLayer,<br /><span class="soft">and whether it actually stands.</span></h1>
-    <p class="lede">An explorer shows you a finalised transaction. It does not tell you whether the
-    validators agreed, or whether the leader answered perfectly well and the round was thrown away
-    anyway. One of those is a verdict. The other is a verdict that never happened.</p>
+    <p class="lede">Who brought it, what they asked for, what the leader proposed, how each
+    validator voted, and how it ended. All of it is on chain. None of it is put together anywhere
+    else, and an explorer will tell you a round finalised without telling you it decided nothing.</p>
     <div class="search">
       <input id="q" placeholder="Search a round id or a contract address" spellcheck="false" autocomplete="off" />
       <button id="go">Look it up</button>
     </div>
     <p class="hint">No wallet, no account, nothing to connect. Try
-      <a href="#" id="example"><code>${short(EXAMPLE)}</code></a>, a round that reads as
-      <code>FINALIZED</code> and decided nothing.</p>
+      <a href="#" id="example"><code>${short(EXAMPLE)}</code></a>, a round that finalised
+      and decided nothing.</p>
     <div class="result" id="result"></div>
   </section>
 
@@ -130,113 +57,121 @@ app.innerHTML = `
   <div id="health"></div>
 
   <h2>The laboratory</h2>
-  <p class="note">Watching rounds tells you what happened. It cannot tell you what makes a round
-  fail, because the payload inside somebody else's contract is invisible from outside. So
-  <a href="${EXPLORER}/address/${ASSAY}" target="_blank" rel="noreferrer">Assay</a> runs controlled
-  rounds on purpose: a page cut to an exact size, an exact number of fields required to match.
-  <strong>It has not yet made a round fail.</strong> Every frontier below is unbracketed, and that
-  is the honest state of it rather than a result.</p>
-  <div class="panel"><div id="assay" class="loading">Reading the lab…</div></div>
+  <p class="note">Watching rounds tells you <em>that</em> one failed. It cannot tell you <em>why</em>,
+  because how much work a contract asked its validators to do is invisible from outside. Every
+  builder writing an Intelligent Contract has to guess how much evidence they can put in front of
+  validators before a round stops coming back, and there is nowhere to look it up. So
+  <strong>Assay</strong> runs the same round on purpose with one thing changed: a page cut to an
+  exact size, an exact number of fields required to match.</p>
+
+  <div class="finding">
+    <div class="finding-head">What it has found so far, and it is a negative</div>
+    <p><strong>Neither axis breaks agreement.</strong> A round carrying 12,000 characters agreed.
+    A round requiring four separate fields to match agreed. So the two things a contract author
+    most obviously controls are not what kills a round, and the frontier below is empty because
+    nothing has been bracketed yet, not because the table is broken.</p>
+    <p>The one real failure behind this whole project looks different from every probe: that
+    contract asked its validators to <strong>compose a judgement</strong>, with a decision, a named
+    precedent and a sentence written on the spot. Assay asks them to <strong>pick from a list</strong>.
+    Generating prose under a clock is a different cost from choosing, and that is the next axis to
+    build in. One supporting case is a hypothesis, not a finding, and it is labelled as one.</p>
+  </div>
+
+  <div class="panel" style="margin-top:12px"><div id="assay" class="loading">Reading the lab…</div></div>
 
   <footer>
-    <a href="${EXPLORER}/address/${CONSENSUS}" target="_blank" rel="noreferrer">consensus contract</a>
-    <a href="${EXPLORER}/address/${ASSAY}" target="_blank" rel="noreferrer">Assay</a>
     <a href="${REPO}" target="_blank" rel="noreferrer">source</a>
+    <span>Assay <code>${short(ASSAY)}</code></span>
+    <span>consensus <code>${short(CONSENSUS)}</code></span>
     <span>reads only, on GenLayer Asimov</span>
   </footer>`;
 
-// ------------------------------------------------------------------ lookup
-
-async function showRound(id) {
-  el('result').innerHTML = '<div class="verdict"><p class="loading">Reading that round…</p></div>';
-  let tx;
-  try {
-    const raw = await client.getTransaction({ hash: id });
-    tx = JSON.parse(JSON.stringify(raw, (_k, v) => (typeof v === 'bigint' ? v.toString() : v)));
-  } catch (e) {
-    el('result').innerHTML = `<div class="verdict bad"><p class="bad">Could not read it: ${esc(e.message)}</p></div>`;
-    return;
-  }
-  if (!tx || !tx.recipient) {
-    el('result').innerHTML = '<div class="verdict"><p class="muted">The node has no round under that id.</p></div>';
-    return;
-  }
-  const outcome = classify(tx);
-  const said = leaderSaid(tx);
-  el('result').innerHTML = `
-    <div class="verdict ${TONE[outcome]}">
-      <span class="pill ${TONE[outcome]}">${esc(outcome)}</span>
-      <p class="meaning">${esc(MEANING[outcome])}</p>
-      <dl>
-        <dt>contract</dt><dd>${esc(tx.recipient)}</dd>
-        <dt>sender</dt><dd>${esc(tx.sender || '')}</dd>
-        <dt>the node reports</dt><dd>status ${esc(tx.statusName || '-')} ·
-          result ${esc(tx.resultName || '-')} · execution ${esc(tx.txExecutionResultName || '-')}</dd>
-        <dt>validators</dt><dd>${esc(tx.numOfInitialValidators || 0)}, ${esc(tx.numOfRounds || 0)} rotation(s)</dd>
-      </dl>
-      ${said ? `<p class="said-head">What the leader said${outcome === 'TIMED_OUT'
-        ? ', which was then discarded' : ''}:</p><pre><code>${esc(said)}</code></pre>` : ''}
-      <p class="hint" style="margin-top:16px">
-        <a href="${EXPLORER}/tx/${esc(id)}" target="_blank" rel="noreferrer">the same round on the official explorer</a></p>
-    </div>`;
-}
-
-let snapshot = null;
-
-// Every round this page has decoded, from the sample and from the live scan
-// both. A contract clicked in the live feed has to resolve to something: it was
-// on screen a moment ago, and sending the reader to a page that says "address
-// not found" because the sample happened not to cover it is a worse answer than
-// no link at all.
-const seenRounds = [];
-const remember = (rows) => {
-  for (const r of rows) if (!seenRounds.some((x) => x.id === r.id)) seenRounds.push(r);
-};
+// ------------------------------------------------------------- the contract
 
 async function showContract(address) {
+  el('result').innerHTML = '<div class="verdict"><p class="loading">Reading that contract…</p></div>';
+
+  // Asked of the chain, not of the sample. The first thing anybody wants to
+  // know about an address is whether there is a contract at it at all.
+  let code = null;
+  let balance = null;
+  try {
+    const [codeHex, balanceHex] = await Promise.all([
+      rpc('eth_getCode', [address, 'latest']),
+      rpc('eth_getBalance', [address, 'latest']),
+    ]);
+    code = Math.max(0, (String(codeHex).length - 2) / 2);
+    balance = Number(BigInt(balanceHex)) / 1e18;
+  } catch { /* the facts are optional; the rounds are not */ }
+
   const rows = seenRounds.filter((r) => r.contract.toLowerCase() === address.toLowerCase());
+  const agreed = rows.filter((r) => r.outcome === 'AGREED').length;
+  const settled = rows.filter((r) => r.outcome !== 'IN_FLIGHT').length;
+  const callers = new Set(rows.map((r) => r.sender).filter(Boolean));
+  const tally = {};
+  for (const r of rows) tally[r.outcome] = (tally[r.outcome] || 0) + 1;
+  const isContract = code !== null && code > 0;
+
+  const facts = `
+    <div class="cards" style="margin:18px 0 6px">
+      <div class="stat"><span>On chain</span>
+        <b class="${isContract ? 'good' : ''}">${code === null ? '—' : (isContract ? 'contract' : 'no code')}</b>
+        <small>${code === null ? 'could not be read' : `${code} bytes of code`}</small></div>
+      <div class="stat"><span>Balance</span><b>${balance === null ? '—' : balance}</b><small>GEN</small></div>
+      <div class="stat"><span>Rounds seen here</span><b>${rows.length}</b>
+        <small>${settled ? `${((agreed / settled) * 100).toFixed(0)}% agreed` : 'none settled'}</small></div>
+      <div class="stat"><span>Distinct callers</span><b>${callers.size || '—'}</b>
+        <small>among those rounds</small></div>
+    </div>`;
+
   if (!rows.length) {
-    el('result').innerHTML = `<div class="verdict"><p class="muted">Nothing against
-      <code>${esc(address)}</code> among the rounds this page has decoded, which is the sample of
-      ${snapshot?.blocks_scanned ?? 0} blocks plus the last 150. That means "not in what was
-      looked at", never "never". A round id can always be looked up directly.</p></div>`;
+    el('result').innerHTML = `
+      <div class="verdict">
+        <div class="verdict-head">
+          <div class="mark">·</div>
+          <div class="headline"><h2 class="outcome">${esc(short(address))}</h2>
+          <p>${isContract
+    ? 'A contract lives here. None of its rounds fall in what this page has decoded.'
+    : 'No code at this address on this network.'}</p></div>
+        </div>
+        ${facts}
+        <p class="hint">The window is the sample plus the last 150 blocks, so this means "not in
+          what was looked at", never "never". A round id can always be looked up directly.</p>
+      </div>`;
     return;
   }
-  const agreed = rows.filter((r) => r.outcome === 'AGREED').length;
+
+  const pills = Object.entries(tally).sort((a, b) => b[1] - a[1])
+    .map(([o, n]) => `<span class="pill ${TONE[o] || 'muted'}">${esc(o)} ${n}</span>`).join(' ');
+
   el('result').innerHTML = `
-    <div class="verdict">
-      <p class="meaning"><code>${esc(address)}</code><br />
-        <strong>${rows.length}</strong> round(s) among what this page has decoded,
-        <strong>${agreed}</strong> of them agreed.</p>
-      <p class="hint">The official explorer does not have a page for every Intelligent Contract,
-        so <a href="${EXPLORER}/address/${esc(address)}" target="_blank" rel="noreferrer">its page
-        there</a> may report the address as not found. That is the explorer's index, not a
-        statement about the contract: every address here was read from a round the chain
-        returned.</p>
-      <div class="scroll"><table>
-        <thead><tr><th>Outcome</th><th>Round</th><th>What the leader said</th></tr></thead>
+    <div class="verdict ${settled && agreed === settled ? 'good' : ''}">
+      <div class="verdict-head">
+        <div class="mark ${settled && agreed === settled ? 'good' : ''}">${isContract ? '⬢' : '·'}</div>
+        <div class="headline">
+          <h2 class="outcome">${esc(short(address))}</h2>
+          <p>${rows.length} round${rows.length === 1 ? '' : 's'} decoded here,
+            ${agreed} of them agreed.</p>
+        </div>
+      </div>
+      ${facts}
+      <p class="hint" style="margin:14px 0 0">${pills}</p>
+      <div class="scroll" style="margin-top:14px"><table>
+        <thead><tr><th>Outcome</th><th>Round</th><th>Brought by</th><th>What the leader said</th></tr></thead>
         <tbody>${rows.map((r) => `
           <tr>
             <td><span class="pill ${TONE[r.outcome] || 'muted'}">${esc(r.outcome)}</span></td>
-            <td><a href="${EXPLORER}/tx/${esc(r.id)}" target="_blank" rel="noreferrer">${esc(short(r.id))}</a></td>
-            <td class="said">${esc((r.leader_said || '').slice(0, 80)) || '<span class="dim">not in the outputs</span>'}</td>
+            <td><a href="#" data-round="${esc(r.id)}">${esc(short(r.id))}</a></td>
+            <td class="said">${esc(short(r.sender || '')) || '<span class="dim">—</span>'}</td>
+            <td class="said">${esc((r.leader_said || '').slice(0, 60)) || '<span class="dim">not in the outputs</span>'}</td>
           </tr>`).join('')}</tbody>
       </table></div>
     </div>`;
+  wireLinks();
 }
 
-// Contract cells are links that stay here rather than leaving for an explorer
-// that may not know the address.
-function wireContractLinks() {
-  for (const link of document.querySelectorAll('a[data-contract]')) {
-    link.onclick = (e) => {
-      e.preventDefault();
-      el('q').value = link.dataset.contract;
-      showContract(link.dataset.contract);
-      el('q').scrollIntoView({ block: 'center', behavior: 'smooth' });
-    };
-  }
-}
+handlers.round = showRound;
+handlers.contract = showContract;
 
 function lookup() {
   const q = el('q').value.trim();
@@ -249,20 +184,15 @@ function lookup() {
 
 el('go').onclick = lookup;
 el('q').onkeydown = (e) => { if (e.key === 'Enter') lookup(); };
-el('example').onclick = (e) => {
-  e.preventDefault();
-  el('q').value = EXAMPLE;
-  lookup();
-};
+el('example').onclick = (e) => { e.preventDefault(); el('q').value = EXAMPLE; lookup(); };
 
-// ------------------------------------------------------------------- data
+// --------------------------------------------------------------------- data
 
 (async () => {
   try { snapshot = await (await fetch('/sample.json')).json(); } catch { /* optional */ }
-  if (snapshot?.rounds) remember(snapshot.rounds);
+  if (snapshot && snapshot.rounds) remember(snapshot.rounds);
 
-  // ---- cards --------------------------------------------------------------
-  const rate = snapshot?.agreement_rate;
+  const rate = snapshot ? snapshot.agreement_rate : null;
   el('cards').innerHTML = `
     <div class="stat"><span>Agreement rate</span>
       <b class="good">${rate == null ? '—' : `${(rate * 100).toFixed(1)}%`}</b>
@@ -274,12 +204,10 @@ el('example').onclick = (e) => {
     <div class="stat"><span>Sampled at block</span><b>${snapshot?.head_block ?? '—'}</b>
       <small>${esc(String(snapshot?.taken_at ?? '').slice(0, 10))}</small></div>`;
 
-  // ---- the sample ---------------------------------------------------------
   if (snapshot) {
     const rows = Object.entries(snapshot.tally || {}).sort((a, b) => b[1] - a[1]).map(
-      ([outcome, n]) => `
-        <tr><td><span class="pill ${TONE[outcome] || 'muted'}">${esc(outcome)}</span></td>
-        <td>${n}</td><td class="muted">${esc(MEANING[outcome] || '')}</td></tr>`).join('');
+      ([o, n]) => `<tr><td><span class="pill ${TONE[o] || 'muted'}">${esc(o)}</span></td>
+        <td>${n}</td><td class="muted">${esc(MEANING[o] || '')}</td></tr>`).join('');
     el('health').innerHTML = `
       <div class="panel">
         <div class="head">Every contract in one window of blocks, not the whole chain.</div>
@@ -291,11 +219,10 @@ el('example').onclick = (e) => {
       <p class="caution">${esc(snapshot.caution)}</p>`;
   }
 
-  // ---- live ---------------------------------------------------------------
   try {
     const head = Number(await rpc('eth_blockNumber', []));
     const logs = await rpc('eth_getLogs', [{
-      fromBlock: '0x' + (head - 150).toString(16), toBlock: 'latest', address: CONSENSUS,
+      fromBlock: `0x${(head - 150).toString(16)}`, toBlock: 'latest', address: CONSENSUS,
     }]);
     const ids = [];
     for (const log of logs) {
@@ -308,38 +235,42 @@ el('example').onclick = (e) => {
       try {
         const raw = await client.getTransaction({ hash: id });
         const tx = JSON.parse(JSON.stringify(raw, (_k, v) => (typeof v === 'bigint' ? v.toString() : v)));
-        if (tx?.recipient && tx.recipient !== '0x' + '0'.repeat(40)) {
+        if (tx && tx.recipient && tx.recipient !== `0x${'0'.repeat(40)}`) {
           found.push({ id, tx, outcome: classify(tx) });
         }
       } catch { /* most topics are not round ids */ }
     }
     remember(found.map((f) => ({
-      id: f.id, contract: f.tx.recipient, outcome: f.outcome, leader_said: leaderSaid(f.tx),
+      id: f.id, contract: f.tx.recipient, sender: f.tx.sender || '',
+      outcome: f.outcome, leader_said: leaderSaid(f.tx),
     })));
     el('live').className = '';
     el('live').innerHTML = found.length ? `
       <div class="scroll"><table>
-        <thead><tr><th>Outcome</th><th>Contract</th><th>Round</th><th>Validators</th><th>What the leader said</th></tr></thead>
-        <tbody>${found.map((f) => `
+        <thead><tr><th>Outcome</th><th>Contract</th><th>Round</th><th>Asked for</th><th>Validators</th></tr></thead>
+        <tbody>${found.map((f) => {
+    const call = readCall(f.tx.txCalldata || f.tx.txData);
+    return `
           <tr>
             <td><span class="pill ${TONE[f.outcome] || 'muted'}">${esc(f.outcome)}</span></td>
             <td><a href="#" data-contract="${esc(f.tx.recipient)}">${esc(short(f.tx.recipient))}</a></td>
-            <td><a href="${EXPLORER}/tx/${esc(f.id)}" target="_blank" rel="noreferrer">${esc(short(f.id))}</a></td>
+            <td><a href="#" data-round="${esc(f.id)}">${esc(short(f.id))}</a></td>
+            <td class="said">${call && call.method ? esc(call.method) : '<span class="dim">—</span>'}</td>
             <td class="muted">${esc(f.tx.numOfInitialValidators || 0)}</td>
-            <td class="said">${esc(leaderSaid(f.tx).slice(0, 70)) || '<span class="dim">not in the outputs</span>'}</td>
-          </tr>`).join('')}</tbody>
+          </tr>`;
+  }).join('')}</tbody>
       </table></div>`
       : '<p class="loading">No rounds in the last 150 blocks. The network is quiet just now.</p>';
-    wireContractLinks();
+    wireLinks();
   } catch (e) {
     el('live').className = '';
     el('live').innerHTML = `<p class="loading bad">Could not scan recent blocks: ${esc(e.message)}</p>`;
   }
 
-  // ---- the lab ------------------------------------------------------------
   try {
     const frontier = JSON.parse(await client.readContract({
-      address: ASSAY, functionName: 'get_frontier', args: [] }));
+      address: ASSAY, functionName: 'get_frontier', args: [],
+    }));
     el('assay').className = '';
     el('assay').innerHTML = `
       <div class="scroll"><table>
@@ -351,7 +282,7 @@ el('example').onclick = (e) => {
           <td class="good">${r.largest_agreed ?? '—'}</td>
           <td>${r.smallest_failed ?? '<span class="dim">none yet</span>'}</td>
           <td class="muted">${r.observations}</td></tr>`).join('')
-        || '<tr><td colspan="5" class="muted">no probes yet</td></tr>'}</tbody>
+      || '<tr><td colspan="5" class="muted">no probes yet</td></tr>'}</tbody>
       </table></div>`;
   } catch (e) {
     el('assay').className = '';
