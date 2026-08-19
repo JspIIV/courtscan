@@ -22,7 +22,10 @@
   "measured": {
     "network_agreement_rate": "about 99.7% over a sampled window of blocks",
     "size_axis": "12000 characters with one bound field agreed, so payload size alone did not break agreement up to the contract's ceiling",
-    "correction": "the project began on the belief that size was the lever, from a contract that timed out at 8000 characters. The measurement did not support it; that contract bound three fields and carried a decision history, so binding is the likelier lever and is what is being measured now"
+    "correction": "the project began on the belief that size was the lever, from a contract that timed out at 8000 characters. The measurement did not support it; that contract bound three fields and carried a decision history, so binding is the likelier lever and is what is being measured now",
+    "binding_axis": "four bound fields at 1500 characters agreed, so binding did not break it either",
+    "state": "the laboratory has not yet reproduced an agreement failure. Every frontier row is unbracketed and the site says so. The one real failure behind the project happened in the wild, in a contract that asked validators to compose a judgement rather than classify a document",
+    "next_axis": "how much the validators must generate, rather than how much they read or how many fields they must match"
   },
   "asymmetry": "a round that agreed wrote itself into the contract and cannot be faked; a round that failed had its state change discarded, so it is attested afterwards with a transaction hash anybody can check",
   "needs_no_wallet": [
@@ -30,5 +33,7 @@
     "the live feed of recent rounds",
     "the sampled agreement rate",
     "the laboratory frontier"
-  ]
+  ],
+  "live": "https://courtscan-five.vercel.app",
+  "repository": "https://github.com/JspIIV/courtscan"
 }

@@ -9,7 +9,7 @@ leader answer perfectly well and the round get thrown away anyway?
 Those two look identical on an explorer. One is a verdict. The other is a verdict
 that never happened.
 
-* **Live:** open it, paste a round id, no wallet and no account
+* **Live:** [courtscan-five.vercel.app](https://courtscan-five.vercel.app) — paste a round id, no wallet and no account
 * **Assay contract:** [`0xbaBf2796De591Dfe9289b60bE68f4426449676fA`](https://explorer-asimov.genlayer.com/address/0xbaBf2796De591Dfe9289b60bE68f4426449676fA) on GenLayer Asimov, chain id 4221
 
 ---
@@ -78,15 +78,24 @@ It is not one. A probe with **12,000 characters and one bound field agreed
 without difficulty.** Size alone did not break anything up to the ceiling this
 contract allows.
 
-What differed in the contract that failed: it bound three fields, one of them a
-judgement rather than an observation, and it carried a history of earlier
-decisions in the prompt. So the lever is more likely to be **what validators are
-required to match, and how much room two honest models have to differ on it**,
-rather than how much text they were handed.
+Binding was the next suspect, and it has not held up either: **four bound
+fields at 1,500 characters agreed too.** So neither axis this contract can vary
+has yet produced a single agreement failure.
 
-That is now the axis being measured, and it is exactly why the lab exists: an
-assumption held by one builder from one contract is not a finding, and it was
-wrong.
+**The lab has not reproduced a failure. That is the current state and it is
+stated rather than dressed up.** Every frontier row reads "not found yet"
+because nothing has been bracketed. A tool that measures where agreement breaks
+and has not yet made it break is a tool with an honest zero in it, and the site
+shows that zero.
+
+What is left, and the likeliest answer: the probe asks validators to *classify* a
+document into four short fields. The contract that failed asked them to *write* a
+judgement, with a decision, a named precedent and a sentence of holding composed
+on the spot. Generating prose under a clock is a different cost from choosing
+from a list. If that is the lever, then the thing that breaks rounds is not how
+much validators read or how many fields they must match, but how much they have
+to compose. That is a hypothesis with one supporting case, and it is the next
+axis to build into the probe.
 
 Both numbers are on the site, side by side, with the count of observations behind
 each. Neither is presented as a law, including this one.
@@ -186,3 +195,9 @@ too. It is a beginning, not a result.
 
 This reads Asimov. Bradbury and Clarke would each need their own sample, and the
 figures should not be assumed to carry across.
+
+And the largest limit, repeated because it matters more than the rest: the
+laboratory has not yet made a round fail on purpose. Every failure it has
+recorded is scheduling noise, set aside from the frontier. The one real
+agreement failure behind this whole project happened in the wild, in a contract
+doing something the probe does not yet do.
