@@ -34,6 +34,6 @@
     "the sampled agreement rate",
     "the laboratory frontier"
   ],
-  "live": "https://courtscan-five.vercel.app",
+  "live": "https://courtscan-genlayer.vercel.app",
   "repository": "https://github.com/JspIIV/courtscan"
 }

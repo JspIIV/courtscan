@@ -9,7 +9,7 @@ leader answer perfectly well and the round get thrown away anyway?
 Those two look identical on an explorer. One is a verdict. The other is a verdict
 that never happened.
 
-* **Live:** [courtscan-five.vercel.app](https://courtscan-five.vercel.app) — paste a round id, no wallet and no account
+* **Live:** [courtscan-five.vercel.app](https://courtscan-genlayer.vercel.app) — paste a round id, no wallet and no account
 * **Assay contract:** [`0xbaBf2796De591Dfe9289b60bE68f4426449676fA`](https://explorer-asimov.genlayer.com/address/0xbaBf2796De591Dfe9289b60bE68f4426449676fA) on GenLayer Asimov, chain id 4221
 
 ---
