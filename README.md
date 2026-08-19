@@ -181,6 +181,22 @@ ASSAY_KEYSTORE_DIR=~/.genlayer/keystores ASSAY_KEYSTORE_PASS=... SWEEP=size npm 
 Sweeps: `quick`, `size`, `binding`, `modes`. `binding` and `modes` are the ones
 with the least data behind them so far, so they are the most worth adding to.
 
+## The site writes nothing, on purpose
+
+`assay.py` has two write methods, `probe` and `report_failure`, and there is no
+button for either. That is deliberate rather than an oversight, and it is said
+here so nobody has to wonder.
+
+Courtscan is a read. Every figure on the page comes from the chain and needs no
+wallet, no account and no GEN, which is the whole reason a stranger can use it
+at all. Taking a measurement is a different act: it costs gas, it takes minutes,
+and it belongs to whoever is running the experiment. That lives in
+`scripts/assay_sweep.mjs`, which sends the probe, reads the receipt, and reports
+a failure back with its transaction hash.
+
+Both write paths are exercised there and the results are on chain at the Assay
+address above.
+
 ## Honest limits
 
 The sample is a window of blocks, not the chain. The agreement rate is over
