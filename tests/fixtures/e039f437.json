@@ -1,0 +1,89 @@
+{
+  "currentTimestamp": "1787380875",
+  "sender": "0xc02246062979123653eF02F8C9Ba0793bAB3A9dE",
+  "recipient": "0x2A34a3aDaE4f3Aca9e9A62203bFc35e8c9F0F4A6",
+  "initialRotations": "1",
+  "txSlot": "13",
+  "createdTimestamp": "1787147329",
+  "lastVoteTimestamp": "1787147337",
+  "randomSeed": "0xcff1bf8c9a890bca577cf82f033e1a2eebee5a9238d95ad6849499a3ae154062",
+  "result": 1,
+  "txExecutionHash": "0x3453893b7c385ddc33d0c6988a534355226b611ce8d0e788eedc415c426d847e",
+  "txCalldata": "0xf2b01604617267730d8c0168656c6c6f206e65772073746f72616765066d6574686f64747570646174655f73746f7261676500",
+  "eqBlocksOutputs": "0xc786706164646564",
+  "messages": [],
+  "queueType": 0,
+  "queuePosition": "0",
+  "activator": "0x1baE1353168E2aA537cb98a968d73A2C1b87e8b0",
+  "lastLeader": "0x7745607927AA9BA77E6b131dC7986aCA2aE43235",
+  "status": 7,
+  "txId": "0xe039f437574c77ea97e710b7809b233b9646bf9abae013f76410c9d5dd1ac958",
+  "readStateBlockRange": {
+    "activationBlock": "18106833",
+    "processingBlock": "18106834",
+    "proposalBlock": "18106837"
+  },
+  "numOfRounds": "0",
+  "lastRound": {
+    "round": "0",
+    "leaderIndex": "3",
+    "votesCommitted": "5",
+    "votesRevealed": "5",
+    "appealBond": "0",
+    "rotationsLeft": "1",
+    "result": 1,
+    "roundValidators": [
+      "0x9781a9dD53665cB949A4bF330CD9f081eEb6b72D",
+      "0x28599c47C458db54Df8DDA3E4d66BB13b0A227a9",
+      "0xbFa67408c4Fe3308C31EEb430183Bc137FC09b12",
+      "0x7745607927AA9BA77E6b131dC7986aCA2aE43235",
+      "0xD3e0720e40d9bef6815dCa4bD6f4e5eC1D3c6cf0"
+    ],
+    "validatorVotes": [
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "validatorVotesHash": [
+      "0x6ac22937cf6c5575810f28a93e435485c3379384914d56c34b033d509b599a3e",
+      "0xb529477565cabb86ed3616e5c3eec943108bb4b6b01c77f45f047cdbd45dbdaa",
+      "0xca3f25ed071a4c9580cbf03534f859a7220f5f87f3d7d35d888971908fa8a4c2",
+      "0xc8a5789520bf62b5003a98638dba930bbbe4c40ed7454d385089724d0d98ccdf",
+      "0x8803f37f104b38d04eca51fc20c2049e07d4fcb59a816511d7ddf84fabd99980"
+    ],
+    "validatorResultHash": [
+      "0xdb1df3a512343ca3aff1e2d68003310fc67479112c13d26cd2ba82f253952b50",
+      "0xdb1df3a512343ca3aff1e2d68003310fc67479112c13d26cd2ba82f253952b50",
+      "0xdb1df3a512343ca3aff1e2d68003310fc67479112c13d26cd2ba82f253952b50",
+      "0xdb1df3a512343ca3aff1e2d68003310fc67479112c13d26cd2ba82f253952b50",
+      "0xdb1df3a512343ca3aff1e2d68003310fc67479112c13d26cd2ba82f253952b50"
+    ],
+    "validatorVotesName": [
+      "AGREE",
+      "AGREE",
+      "AGREE",
+      "AGREE",
+      "AGREE"
+    ]
+  },
+  "consumedValidators": [
+    "0x9781a9dD53665cB949A4bF330CD9f081eEb6b72D",
+    "0x28599c47C458db54Df8DDA3E4d66BB13b0A227a9",
+    "0xbFa67408c4Fe3308C31EEb430183Bc137FC09b12",
+    "0x7745607927AA9BA77E6b131dC7986aCA2aE43235",
+    "0xD3e0720e40d9bef6815dCa4bD6f4e5eC1D3c6cf0"
+  ],
+  "txExecutionResult": 1,
+  "txData": "0xf2b01604617267730d8c0168656c6c6f206e65772073746f72616765066d6574686f64747570646174655f73746f7261676500",
+  "txDataDecoded": {
+    "callData": {},
+    "leaderOnly": false,
+    "type": "call"
+  },
+  "numOfInitialValidators": "1",
+  "statusName": "FINALIZED",
+  "resultName": "AGREE",
+  "txExecutionResultName": "FINISHED_WITH_RETURN"
+}

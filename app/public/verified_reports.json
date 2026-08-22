@@ -1,0 +1,99 @@
+{
+  "contract": "0xbaBf2796De591Dfe9289b60bE68f4426449676fA",
+  "checked_at": "2026-08-22T06:54:43.975Z",
+  "reports_seen": 2,
+  "verified": 2,
+  "rejected": 0,
+  "mislabelled": 1,
+  "agreement_breaks": 1,
+  "counts_against_agreement": [
+    "NO_MAJORITY",
+    "DISAGREEMENT"
+  ],
+  "method": "Assay cannot read a receipt from inside itself, so every report is a claim until something checks it. Each one here was fetched from the chain, confirmed to have been sent to Assay, and its outcome taken from the receipt rather than from the label it was filed under. Only outcomes that bear on agreement move the frontier.",
+  "frontier": [
+    {
+      "mode": "STRICT",
+      "bound_fields": 1,
+      "largest_agreed": 12000,
+      "smallest_failed": 3500,
+      "agreed": 5,
+      "failed": 1,
+      "set_aside": 0,
+      "observations": 6,
+      "settled": false
+    },
+    {
+      "mode": "STRICT",
+      "bound_fields": 3,
+      "largest_agreed": null,
+      "smallest_failed": null,
+      "agreed": 0,
+      "failed": 0,
+      "set_aside": 1,
+      "observations": 0,
+      "settled": false
+    },
+    {
+      "mode": "STRICT",
+      "bound_fields": 4,
+      "largest_agreed": 1500,
+      "smallest_failed": null,
+      "agreed": 1,
+      "failed": 0,
+      "set_aside": 0,
+      "observations": 1,
+      "settled": false
+    }
+  ],
+  "reports": [
+    {
+      "report_id": "0",
+      "tx_hash": "0x090749e09221e5954d61bd0c66974fefa34c2449232072086f67ce1c001efff6",
+      "source_url": "https://raw.githubusercontent.com/JspIIV/warden-evidence/main/window-1.md",
+      "evidence_chars": 3500,
+      "bound_fields": 1,
+      "mode": "STRICT",
+      "outcome": "REVERTED",
+      "note": "status FINALIZED, result NO_MAJORITY, execution FINISHED_WITH_RETURN",
+      "reported_by": "0x80519c53f10d731e4ff83a7d9acd69cf98da6258",
+      "reported_at": "2026-08-19T14:17:48+00:00",
+      "verify": "read the receipt for tx_hash; this contract cannot",
+      "verified": true,
+      "claimed_outcome": "REVERTED",
+      "actual_outcome": "NO_MAJORITY",
+      "mislabelled": true,
+      "counts_against_agreement": true,
+      "on_chain": {
+        "status": "FINALIZED",
+        "result": "NO_MAJORITY",
+        "execution": "FINISHED_WITH_RETURN",
+        "votes": null
+      }
+    },
+    {
+      "report_id": "1",
+      "tx_hash": "0x1221260fa3e1864875051a6d0d0936d7bede7c212d118a07f1a1424e8beca2a4",
+      "source_url": "https://raw.githubusercontent.com/JspIIV/warden-evidence/main/window-1.md",
+      "evidence_chars": 1500,
+      "bound_fields": 3,
+      "mode": "STRICT",
+      "outcome": "NOT_VOTED",
+      "note": "status FINALIZED, result IDLE, execution NOT_VOTED",
+      "reported_by": "0x80519c53f10d731e4ff83a7d9acd69cf98da6258",
+      "reported_at": "2026-08-19T14:36:01+00:00",
+      "verify": "read the receipt for tx_hash; this contract cannot",
+      "verified": true,
+      "claimed_outcome": "NOT_VOTED",
+      "actual_outcome": "NOT_VOTED",
+      "mislabelled": false,
+      "counts_against_agreement": false,
+      "on_chain": {
+        "status": "FINALIZED",
+        "result": "IDLE",
+        "execution": "NOT_VOTED",
+        "votes": null
+      }
+    }
+  ]
+}

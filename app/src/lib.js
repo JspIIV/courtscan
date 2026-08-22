@@ -18,6 +18,15 @@ export const EXAMPLE = '0x938a593d62056696702c5db81a7f61c487a970ddfc4f1eece34e67
 
 export const client = createClient({ chain: testnetAsimov });
 
+// The decoder lives in decode.js, alone, and is re-exported here so the views
+// keep importing from one place. It was briefly duplicated across both files,
+// which is the same mistake that put a retry rule in two places in a sibling
+// contract: two copies of one rule drift, and the drift is invisible until
+// something disagrees with itself.
+export { classify, leaderSaid, readCall, readability, agreementRate, OUTCOME, READ }
+  from './decode.js';
+
+
 export const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 export const short = (s) => (s ? `${String(s).slice(0, 10)}…${String(s).slice(-6)}` : '');
@@ -35,17 +44,6 @@ export async function rpc(method, params) {
 
 // The classification the whole project turns on. The node reports three
 // separate things about a round and no one of them says whether it stands.
-export function classify(tx) {
-  const status = String(tx.statusName || '');
-  const result = String(tx.resultName || '');
-  const execution = String(tx.txExecutionResultName || '');
-  if (result === 'TIMEOUT') return 'TIMED_OUT';
-  if (execution === 'NOT_VOTED') return 'NOT_VOTED';
-  if (execution === 'FINISHED_WITH_ERROR') return 'ERRORED';
-  if (result === 'AGREE' || execution === 'FINISHED_WITH_RETURN') return 'AGREED';
-  if (status === 'PENDING' || status === 'ACTIVATED' || status === '') return 'IN_FLIGHT';
-  return 'OTHER';
-}
 
 export const MEANING = {
   AGREED: 'The validators agreed. This decision stands.',
@@ -76,83 +74,11 @@ export const VOTE_TONE = {
   DETERMINISTIC_VIOLATION: 'bad', IDLE: 'muted', NOT_VOTED: 'muted',
 };
 
-export function leaderSaid(tx) {
-  const hex = String(tx.eqBlocksOutputs || '');
-  if (hex.length < 12) return '';
-  let text = '';
-  try {
-    const bytes = new Uint8Array(hex.slice(2).match(/.{1,2}/g).map((b) => parseInt(b, 16)));
-    text = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
-  } catch { return ''; }
-  const a = text.indexOf('{');
-  const b = text.lastIndexOf('}');
-  if (a < 0 || b <= a) return '';
-  const slice = text.slice(a, b + 1).replace(/[^ -~]+/g, ' ').trim();
-  // The outputs are padded, and the padding decodes to plausible looking words.
-  // Printing one under "what the leader said" would be putting words in its
-  // mouth, which is the exact failure this page exists to expose.
-  return slice.length < 12 ? '' : slice;
-}
 
 // The call that opened the round, read out of the calldata.
 //
 // GenLayer packs the method name and arguments into bytes with no schema I
 // could find published, so this does not claim to decode the format.
-export function readCall(hex) {
-  if (!hex || String(hex).length < 6) return null;
-  let bytes;
-  try {
-    bytes = String(hex).slice(2).match(/.{1,2}/g).map((b) => parseInt(b, 16));
-  } catch { return null; }
-
-  const ascii = (from, len) => {
-    let out = '';
-    for (let i = from; i < from + len && i < bytes.length; i++) {
-      const b = bytes[i];
-      if (b < 0x20 || b > 0x7e) return null;
-      out += String.fromCharCode(b);
-    }
-    return out;
-  };
-  const find = (word) => {
-    for (let i = 0; i + word.length <= bytes.length; i++) {
-      if (ascii(i, word.length) === word) return i;
-    }
-    return -1;
-  };
-
-  // The value after a key is preceded by one tag byte, and shifting that byte
-  // right by three gives its length. Worked out from real rounds rather than
-  // from documentation: 0x34 sits before a six character method name, 0x0c
-  // before a one character argument.
-  const valueAfter = (word) => {
-    const at = find(word);
-    if (at < 0) return null;
-    const tag = bytes[at + word.length];
-    if (tag === undefined) return null;
-    const length = tag >> 3;
-    if (length <= 0 || length > 64) return null;
-    return ascii(at + word.length + 1, length);
-  };
-
-  const method = valueAfter('method');
-  const runs = [];
-  let current = '';
-  for (const b of bytes) {
-    if (b >= 0x20 && b <= 0x7e) current += String.fromCharCode(b);
-    else { if (current.length) runs.push(current); current = ''; }
-  }
-  if (current.length) runs.push(current);
-
-  const args = [];
-  for (const run of runs) {
-    if (run === 'args' || run === 'method') continue;
-    if (method && run.includes('method')) continue;
-    if (method && run === method) continue;
-    args.push(run);
-  }
-  return { method, args };
-}
 
 // ------------------------------------------------------- the case content
 

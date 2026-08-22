@@ -14,6 +14,48 @@ that never happened.
 
 ---
 
+
+## Verification, and what it caught
+
+A steward objected that unverified failure reports and malformed model outputs
+could distort the published agreement frontier. Both were true, and one of them
+had already happened.
+
+**Reports are now checked against their receipts.** Assay cannot read a receipt
+from inside itself, so `report_failure` takes a transaction hash and a claimed
+outcome and can check neither. `scripts/verify_reports.mjs` fetches each cited
+transaction, confirms it was sent to Assay, and **takes the outcome from the
+receipt rather than from the label it was filed under**. Only outcomes that bear
+on agreement, `NO_MAJORITY` and `DISAGREEMENT`, may move the frontier. `TIMEOUT`
+is about speed, `NOT_VOTED` about the queue, and `FINISHED_WITH_ERROR` about the
+contract; letting those move it would put the edge below payloads that
+demonstrably agree.
+
+The first run found one of our own reports filed as `REVERTED` whose receipt
+says `NO_MAJORITY`: the validators could not reach a majority, which is
+agreement actually breaking, parked in a bucket the frontier sets aside. **The
+page had been claiming nothing ever broke.** It now shows the break, at 3,500
+characters with one bound field, along with every report and whether it was
+mislabelled.
+
+**Undecodable rounds no longer count as agreement.** A round whose leader output
+cannot be decoded is counted, reported, and kept out of the rate entirely. The
+validators may well have agreed, but a rate published as how often the network
+agrees on an answer cannot include rounds where nobody can say what the answer
+was.
+
+**The decoder has fixtures and invariant tests.** `npm test` runs fifteen checks
+with no network, against raw receipts captured from Asimov in `tests/fixtures`.
+They cover the real cases and the properties: padding is never reported as
+something the leader said, an undecodable round cannot move the rate in either
+direction, the rate always lies between 0 and 1, it is null rather than zero
+when nothing can be counted, and every round lands in exactly one bucket.
+
+These run offline on purpose. They are the properties that must hold on the days
+the testnet is unwell, and a test needing a healthy chain is skipped on exactly
+those days.
+
+
 ## The case, in one round
 
 This round is real and you can look it up in Courtscan right now:

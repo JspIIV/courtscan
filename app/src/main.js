@@ -65,16 +65,27 @@ app.innerHTML = `
   exact size, an exact number of fields required to match.</p>
 
   <div class="finding">
-    <div class="finding-head">What it has found so far, and it is a negative</div>
-    <p><strong>Neither axis breaks agreement.</strong> A round carrying 12,000 characters agreed.
-    A round requiring four separate fields to match agreed. So the two things a contract author
-    most obviously controls are not what kills a round, and the frontier below is empty because
-    nothing has been bracketed yet, not because the table is broken.</p>
-    <p>The one real failure behind this whole project looks different from every probe: that
-    contract asked its validators to <strong>compose a judgement</strong>, with a decision, a named
-    precedent and a sentence written on the spot. Assay asks them to <strong>pick from a list</strong>.
-    Generating prose under a clock is a different cost from choosing, and that is the next axis to
-    build in. One supporting case is a hypothesis, not a finding, and it is labelled as one.</p>
+    <div class="finding-head">What it has found so far</div>
+    <p><strong>Agreement broke once, and this page said otherwise until a reviewer pushed on it.</strong>
+    A round at 3,500 characters with one bound field came back <code>NO_MAJORITY</code>: the
+    validators could not reach a majority. It had been filed under <code>REVERTED</code>, a heading
+    the frontier sets aside, so the page went on reporting that nothing had ever broken. The chain
+    had said otherwise the whole time. Every report is now checked against its receipt and its
+    outcome taken from there rather than from the label it arrived with.</p>
+    <p><strong>Size alone still does not break it.</strong> A round carrying 12,000 characters
+    agreed, and a round requiring four separate fields to match agreed, both larger than the one
+    that failed. So the two things a contract author most obviously controls are not the axis, and
+    a single break at 3,500 characters is not a limit: it is one observation, with agreements on
+    both sides of it.</p>
+    <p>The failure behind this whole project looks different again: that contract asked its
+    validators to <strong>compose a judgement</strong>, with a decision, a named precedent and a
+    sentence written on the spot. Assay asks them to <strong>pick from a list</strong>. Generating
+    prose under a clock is a different cost from choosing, and that is the next axis to build in.
+    A hypothesis, and labelled as one.</p>
+  </div>
+
+  <div class="panel" style="margin-top:12px">
+    <div id="verified" class="loading">Checking every reported failure against the chain…</div>
   </div>
 
   <div class="panel" style="margin-top:12px"><div id="assay" class="loading">Reading the lab…</div></div>
@@ -265,6 +276,44 @@ el('example').onclick = (e) => { e.preventDefault(); el('q').value = EXAMPLE; lo
   } catch (e) {
     el('live').className = '';
     el('live').innerHTML = `<p class="loading bad">Could not scan recent blocks: ${esc(e.message)}</p>`;
+  }
+
+  // The frontier the page publishes is the verified one, rebuilt from receipts
+  // by scripts/verify_reports.mjs. The contract's own get_frontier is built from
+  // whatever labels reports arrived with, and one of ours was wrong.
+  try {
+    const checked = await (await fetch('verified_reports.json')).json();
+    const breaks = checked.reports.filter((r) => r.verified && r.counts_against_agreement);
+    const wrong = checked.reports.filter((r) => r.verified && r.mislabelled);
+    el('verified').className = '';
+    el('verified').innerHTML = `
+      <div class="finding-head">Every reported failure, checked against its receipt</div>
+      <p class="note">Assay cannot read a receipt from inside itself, so a report is a claim until
+      something looks. Each one below was fetched from the chain, confirmed to have been sent to
+      Assay, and its outcome taken from the receipt rather than from the heading it was filed
+      under. <strong>${checked.verified} verified, ${checked.rejected} rejected,
+      ${checked.mislabelled} filed under the wrong outcome.</strong></p>
+      <div class="scroll"><table>
+        <thead><tr><th>Probe</th><th>Filed as</th><th>Chain says</th><th>Payload</th>
+          <th>Bears on agreement</th></tr></thead>
+        <tbody>${checked.reports.map((r) => `
+          <tr><td><code>${esc(String(r.tx_hash).slice(0, 12))}…</code></td>
+          <td class="muted">${esc(r.claimed_outcome || r.outcome)}</td>
+          <td class="${r.verified ? (r.mislabelled ? 'bad' : '') : 'muted'}">${
+            r.verified ? esc(r.actual_outcome) : `<span class="dim">rejected</span>`}</td>
+          <td>${r.evidence_chars} chars, ${r.bound_fields} bound</td>
+          <td>${r.counts_against_agreement ? '<span class="pill bad">yes</span>'
+            : '<span class="dim">set aside</span>'}</td></tr>`).join('')
+      || '<tr><td colspan="5" class="muted">nothing reported yet</td></tr>'}</tbody>
+      </table></div>
+      ${breaks.length ? `<p class="note"><strong>Agreement actually broke ${breaks.length}
+        time${breaks.length === 1 ? '' : 's'}:</strong> ${breaks.map((b) =>
+          `${esc(b.actual_outcome)} at ${b.evidence_chars} characters with ${b.bound_fields}
+           bound field${b.bound_fields === 1 ? '' : 's'}`).join('; ')}.
+        ${wrong.length ? 'Only visible because the labels were not trusted.' : ''}</p>` : ''}`;
+  } catch (e) {
+    el('verified').className = '';
+    el('verified').innerHTML = `<p class="loading bad">Could not read the verification: ${esc(e.message)}</p>`;
   }
 
   try {
