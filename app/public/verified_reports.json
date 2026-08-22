@@ -1,6 +1,6 @@
 {
   "contract": "0xbaBf2796De591Dfe9289b60bE68f4426449676fA",
-  "checked_at": "2026-08-22T06:54:43.975Z",
+  "checked_at": "2026-08-22T13:36:28.495Z",
   "reports_seen": 2,
   "verified": 2,
   "rejected": 0,
@@ -10,7 +10,7 @@
     "NO_MAJORITY",
     "DISAGREEMENT"
   ],
-  "method": "Assay cannot read a receipt from inside itself, so every report is a claim until something checks it. Each one here was fetched from the chain, confirmed to have been sent to Assay, and its outcome taken from the receipt rather than from the label it was filed under. Only outcomes that bear on agreement move the frontier.",
+  "method": "Assay cannot read a receipt from inside itself, so every report is a claim until something checks it. Each one here was fetched from the chain, confirmed to have been sent to Assay, its outcome taken from the receipt rather than the label it was filed under, and its payload size, bound field count and mode read out of the probe call it cites rather than from what the report said about itself. Only outcomes that bear on agreement move the frontier, and they move it at the dimensions the calldata proves.",
   "frontier": [
     {
       "mode": "STRICT",
@@ -60,6 +60,12 @@
       "reported_at": "2026-08-19T14:17:48+00:00",
       "verify": "read the receipt for tx_hash; this contract cannot",
       "verified": true,
+      "dimensions_from_calldata": {
+        "source_url": "https://raw.githubusercontent.com/JspIIV/warden-evidence/main/window-1.md",
+        "evidence_chars": 3500,
+        "bound_fields": 1,
+        "mode": "STRICT"
+      },
       "claimed_outcome": "REVERTED",
       "actual_outcome": "NO_MAJORITY",
       "mislabelled": true,
@@ -84,6 +90,12 @@
       "reported_at": "2026-08-19T14:36:01+00:00",
       "verify": "read the receipt for tx_hash; this contract cannot",
       "verified": true,
+      "dimensions_from_calldata": {
+        "source_url": "https://raw.githubusercontent.com/JspIIV/warden-evidence/main/window-1.md",
+        "evidence_chars": 1500,
+        "bound_fields": 3,
+        "mode": "STRICT"
+      },
       "claimed_outcome": "NOT_VOTED",
       "actual_outcome": "NOT_VOTED",
       "mislabelled": false,

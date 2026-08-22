@@ -15,7 +15,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  OUTCOME, READ, agreementRate, classify, leaderSaid, readCall, readability,
+  OUTCOME, READ, agreementRate, classify, dimensionMismatches, leaderSaid, probeDimensions,
+  readCall, readability,
 } from '../app/src/decode.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -58,15 +59,41 @@ test('every fixture classifies into a known outcome', () => {
   for (const tx of all()) assert.ok(known.has(classify(tx)));
 });
 
-test('readability agrees with leaderSaid on every fixture', () => {
-  // The invariant that keeps the two from drifting apart: READABLE if and only
-  // if there is something to show.
+test('readability and leaderSaid stay consistent on every fixture', () => {
+  // They are not the same question and must not be conflated. leaderSaid is
+  // "is there a JSON object worth showing"; readability is "can the output be
+  // decoded at all". Plenty of contracts return a tagged value that is perfectly
+  // readable and is not JSON, and calling those undecodable once excluded every
+  // round on the network at once.
+  //
+  // What must hold in both directions: anything worth showing is readable, and
+  // nothing undecodable has anything to show.
   for (const tx of all()) {
     const said = leaderSaid(tx);
     const read = readability(tx);
-    if (read === READ.READABLE) assert.notEqual(said, '');
-    if (read === READ.UNREADABLE) assert.equal(said, '');
+    if (said !== '') assert.equal(read, READ.READABLE, 'something to show must be readable');
+    if (read === READ.UNREADABLE) assert.equal(said, '', 'undecodable must show nothing');
   }
+});
+
+test('the padding placeholder is not an answer and not a failure', () => {
+  // The node writes an eight byte placeholder containing the word "padded" for
+  // rounds that had no equivalence block. Reading that as a decode failure is
+  // what emptied the rate: every deterministic round on the network carries one.
+  const tx = load('a21f5097.json');
+  assert.equal(readability(tx), READ.NONE);
+  assert.equal(leaderSaid(tx), '');
+});
+
+test('a real tagged output is readable even though it is not JSON', () => {
+  const tx = load('090749e0.json');
+  assert.equal(readability(tx), READ.READABLE);
+});
+
+test('a real JSON answer is readable and is shown', () => {
+  const tx = load('938a593d.json');
+  assert.equal(readability(tx), READ.READABLE);
+  assert.ok(leaderSaid(tx).startsWith('{'));
 });
 
 // -------------------------------------------------------------- the calldata
@@ -76,6 +103,75 @@ test('a real call decodes to its method and arguments', () => {
   const hex = '0x' + 'dc9a160461726773150c310c33066d6574686f643c6578616d696e6500000000';
   const call = readCall(hex);
   assert.deepEqual(call, { method: 'examine', args: ['1', '3'] });
+});
+
+// A real probe call, from the transaction one of Assay's failure reports cites.
+// The two byte length on the URL is the case that matters: a single byte tag
+// cannot express seventy three characters, and an earlier decoder returned an
+// empty argument list here while still reporting the method correctly, which is
+// the quietest way for a decoder to be wrong.
+test('a probe call decodes to all four of its arguments', () => {
+  const tx = load('1221260f.json');
+  const call = readCall(tx.txCalldata || tx.txData);
+  assert.equal(call.method, 'probe');
+  assert.equal(call.args.length, 4);
+  assert.ok(call.args[0].startsWith('https://'),
+    'a multi byte length must be read as one number');
+  assert.ok(call.args[0].length > 60);
+});
+
+test('probe dimensions come out of the calldata as numbers', () => {
+  const tx = load('1221260f.json');
+  const dims = probeDimensions(tx);
+  assert.equal(typeof dims.evidence_chars, 'number');
+  assert.equal(typeof dims.bound_fields, 'number');
+  assert.ok(dims.evidence_chars > 0);
+  assert.equal(dims.mode, 'STRICT');
+});
+
+test('a report whose numbers match its probe passes the binding', () => {
+  const dims = probeDimensions(load('1221260f.json'));
+  assert.deepEqual(dimensionMismatches(dims, dims), []);
+});
+
+test('a report that overstates or understates its probe is caught', () => {
+  // This is the binding doing its job. Each altered field must be reported, and
+  // a payload size is the one that matters most: it is the axis the frontier is
+  // drawn on, so a wrong one moves the published edge.
+  const dims = probeDimensions(load('1221260f.json'));
+
+  const smaller = dimensionMismatches({ ...dims, evidence_chars: 500 }, dims);
+  assert.equal(smaller.length, 1);
+  assert.match(smaller[0], /evidence_chars reported 500/);
+
+  const bigger = dimensionMismatches({ ...dims, evidence_chars: 12000 }, dims);
+  assert.equal(bigger.length, 1);
+
+  const bound = dimensionMismatches({ ...dims, bound_fields: 99 }, dims);
+  assert.equal(bound.length, 1);
+  assert.match(bound[0], /bound_fields/);
+
+  const mode = dimensionMismatches({ ...dims, mode: 'LOOSE' }, dims);
+  assert.equal(mode.length, 1);
+  assert.match(mode[0], /mode/);
+
+  const everything = dimensionMismatches(
+    { evidence_chars: 1, bound_fields: 2, mode: 'X' }, dims);
+  assert.equal(everything.length, 3, 'every wrong field must be named, not just the first');
+});
+
+test('a report bound to a call that is not a probe fails the binding', () => {
+  assert.deepEqual(dimensionMismatches({ evidence_chars: 1, bound_fields: 1, mode: 'STRICT' }, null),
+    ['the calldata does not decode as a probe call']);
+});
+
+test('a call that is not a probe yields no dimensions', () => {
+  // The binding must refuse to describe something it did not read, or a report
+  // could be bound to a transaction that never carried those dimensions at all.
+  const notAProbe = '0x' + 'dc9a160461726773150c310c33066d6574686f643c6578616d696e6500000000';
+  assert.equal(probeDimensions({ txData: notAProbe }), null);
+  assert.equal(probeDimensions({ txData: '0xdeadbeef' }), null);
+  assert.equal(probeDimensions({}), null);
 });
 
 test('calldata that decodes to nothing returns null rather than guessing', () => {

@@ -25,6 +25,17 @@
 import { createClient } from 'genlayer-js';
 import { testnetAsimov } from 'genlayer-js/chains';
 import fs from 'fs';
+// One implementation, shared with the page.
+//
+// This file used to carry its own copy of classify and leaderSaid. They were
+// the same rules written twice, which is how the published sample went on
+// counting undecodable rounds as agreements after the page had stopped: the
+// tested version was fixed and this one was not. The tests in tests/ now cover
+// exactly the code this script runs.
+import {
+  OUTCOME, READ, agreementRate, classify, leaderSaid, readability,
+} from '../app/src/decode.js';
+
 
 const RPC = process.env.GEN_RPC || 'https://rpc-asimov.genlayer.com';
 const CONSENSUS = process.env.CONSENSUS || '0x6CAFF6769d70824745AD895663409DC70aB5B28E';
@@ -52,38 +63,6 @@ async function rpc(method, params) {
 /// round and none of them alone tells you whether a decision stands: a status,
 /// a result, and an execution result. A round can be FINALIZED and still have
 /// been thrown away.
-function classify(tx) {
-  const status = String(tx.statusName || '');
-  const result = String(tx.resultName || '');
-  const execution = String(tx.txExecutionResultName || '');
-
-  if (result === 'TIMEOUT') return 'TIMED_OUT';
-  if (execution === 'NOT_VOTED') return 'NOT_VOTED';
-  if (execution === 'FINISHED_WITH_ERROR') return 'ERRORED';
-  if (result === 'AGREE' || execution === 'FINISHED_WITH_RETURN') return 'AGREED';
-  if (status === 'PENDING' || status === 'ACTIVATED' || status === '') return 'IN_FLIGHT';
-  return 'OTHER';
-}
-
-/// What the leader actually said, when it can be read.
-///
-/// The equivalence block outputs are raw bytes with the leader's own answer
-/// inside. It is worth surfacing precisely because a round can carry a perfectly
-/// sensible answer and still not stand: seeing both at once is the thing no
-/// other tool shows.
-function leaderSaid(tx) {
-  const hex = String(tx.eqBlocksOutputs || '');
-  if (hex.length < 12) return '';
-  let text = '';
-  try { text = Buffer.from(hex.slice(2), 'hex').toString('utf8'); } catch { return ''; }
-  const start = text.indexOf('{');
-  const end = text.lastIndexOf('}');
-  if (start < 0 || end <= start) return '';   // there is no object in there to read
-  const slice = text.slice(start, end + 1).replace(/[^ -~]+/g, ' ').trim();
-  // The outputs carry padding that decodes to plausible looking words. Recording
-  // one as the leader's answer would be putting words in its mouth.
-  return slice.length < 12 ? '' : slice.slice(0, 400);
-}
 
 const head = Number(await rpc('eth_blockNumber', []));
 const from = head - BLOCKS;
@@ -170,6 +149,7 @@ for (const [id, signature] of seen) {
     validators: Number(tx.numOfInitialValidators || 0),
     rotations: Number(tx.numOfRounds || 0),
     leader_said: leaderSaid(tx),
+    readability: readability(tx),
     at: Number(tx.createdTimestamp || 0),
   });
   if (rounds.length % 10 === 0) {
@@ -183,9 +163,10 @@ for (const [id, signature] of seen) {
 const tally = {};
 for (const r of rounds) tally[r.outcome] = (tally[r.outcome] || 0) + 1;
 
-const settled = rounds.filter((r) => r.outcome !== 'IN_FLIGHT');
-const agreed = tally.AGREED || 0;
-const agreementRate = settled.length ? (agreed / settled.length) : null;
+// The same function the page uses and the tests check. Undecodable rounds are
+// kept out of it: the validators may have agreed, but a rate about agreement on
+// an answer cannot include rounds where nobody can say what the answer was.
+const rate = agreementRate(rounds);
 
 const contracts = {};
 for (const r of rounds) {
@@ -198,8 +179,11 @@ console.log('\n--- the sample ---');
 for (const [outcome, n] of Object.entries(tally).sort((a, b) => b[1] - a[1])) {
   console.log(`  ${outcome.padEnd(11)} ${String(n).padStart(4)}`);
 }
-if (agreementRate !== null) {
-  console.log(`\n  agreement rate ${(agreementRate * 100).toFixed(1)}% of ${settled.length} settled rounds`);
+if (rate.rate !== null) {
+  console.log(`\n  agreement rate ${(rate.rate * 100).toFixed(1)}% of ${rate.counted} counted rounds`);
+}
+if (rate.undecodable) {
+  console.log(`  ${rate.undecodable} excluded: the leader output could not be decoded`);
 }
 console.log(`  ${Object.keys(contracts).length} distinct contracts`);
 console.log('\n  event signatures that carried round ids:');
@@ -220,15 +204,17 @@ const snapshot = {
   rounds_decoded: rounds.length,
   capped_at: MAX_ROUNDS,
   tally,
-  settled_rounds: settled.length,
-  agreement_rate: agreementRate,
+  settled_rounds: rate.counted,
+  agreement_rate: rate.rate,
+  agreement: rate,
   distinct_contracts: Object.keys(contracts).length,
   contracts,
   event_signatures_carrying_round_ids: bySignature,
   caution: (
     'a sample of one window of blocks, not the whole chain. The agreement rate is '
-    + 'over rounds that had settled when this was taken; rounds still in flight are '
-    + 'counted separately and excluded from it'),
+    + 'over rounds that had settled when this was taken; rounds still in flight, and '
+    + 'rounds whose leader output could not be decoded, are counted separately and '
+    + 'excluded from it'),
   rounds,
 };
 

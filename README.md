@@ -38,6 +38,37 @@ page had been claiming nothing ever broke.** It now shows the break, at 3,500
 characters with one bound field, along with every report and whether it was
 mislabelled.
 
+**One implementation, and the published path goes through it.** The indexer used
+to carry its own copy of the classifier and the rate, so fixing the tested copy
+left the published sample using the old one. `scripts/courtscan_index.mjs` and
+the page now both import `app/src/decode.js`, and the tests cover exactly the
+code that runs.
+
+**Reports are bound to the calls they cite.** A report names a payload size and a
+bound field count, and nothing stopped it naming numbers belonging to a different
+probe. Those numbers are the axes the frontier is drawn on, so a wrong one is not
+a detail, it is a measurement of something else entered on this chart. The
+dimensions now come out of the probe's own calldata and a report that disagrees
+is rejected.
+
+Doing that needed a real calldata decoder rather than the heuristic one, which
+read method names correctly and returned empty argument lists. GenLayer tags each
+value with a LEB128 varint whose low three bits are the type and whose remainder
+is a length: type 4 string, 5 array, 6 map, with map keys carrying a plain length
+byte instead. The asymmetry is what the heuristic missed.
+
+**The page publishes the verified frontier**, built from receipts and calldata,
+not the contract's own `get_frontier`, which is assembled from whatever labels
+reports arrived with. One of ours was wrong, so publishing that one would have
+been publishing the error.
+
+**A correction worth recording.** The first attempt at excluding parse failures
+excluded every round on the network: it treated "not JSON" as undecodable, and
+most contracts return a tagged value that is not JSON and never meant to be. A
+rate computed that way is not stricter, it is empty. Readability now has three
+states, and the placeholder the node writes for rounds with no equivalence block
+at all, an eight byte value containing the word `padded`, is one of them.
+
 **Undecodable rounds no longer count as agreement.** A round whose leader output
 cannot be decoded is counted, reported, and kept out of the rate entirely. The
 validators may well have agreed, but a rate published as how often the network

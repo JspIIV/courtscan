@@ -27,6 +27,7 @@
 import { createClient } from 'genlayer-js';
 import { testnetAsimov } from 'genlayer-js/chains';
 import fs from 'node:fs';
+import { dimensionMismatches, probeDimensions } from '../app/src/decode.js';
 
 const ASSAY = '0xbaBf2796De591Dfe9289b60bE68f4426449676fA';
 const OUT = 'app/public/verified_reports.json';
@@ -104,10 +105,27 @@ async function verify(report) {
     return reject('the receipt does not show a recognisable outcome');
   }
 
+  // Bind the report to the call it cites. A report says "this failed at 3,500
+  // characters with one bound field", and until now nothing stopped it saying
+  // that about a probe that carried twelve thousand. The dimensions come out of
+  // the probe's own calldata, and a report that disagrees with them does not
+  // move the frontier: those numbers are the axes the frontier is drawn on, so a
+  // wrong one is not a detail, it is the measurement.
+  const actualDims = probeDimensions(tx);
+  if (!actualDims) {
+    return reject('the calldata does not decode as a probe call, so the reported '
+      + 'dimensions cannot be checked');
+  }
+  const mismatches = dimensionMismatches(report, actualDims);
+  if (mismatches.length) {
+    return reject(`the report does not match the probe it cites: ${mismatches.join('; ')}`);
+  }
+
   const claimed = String(report.outcome || '').toUpperCase();
   return {
     ...report,
     verified: true,
+    dimensions_from_calldata: actualDims,
     claimed_outcome: claimed,
     actual_outcome: actual,
     mislabelled: claimed !== actual,
@@ -146,8 +164,10 @@ function frontier(runs, checked) {
 
   for (const report of checked) {
     if (!report.verified) continue;
-    const row = slot(report.mode, Number(report.bound_fields));
-    const size = Number(report.evidence_chars);
+    // From the calldata, which is what verification just bound them to.
+    const dims = report.dimensions_from_calldata;
+    const row = slot(dims.mode, dims.bound_fields);
+    const size = dims.evidence_chars;
     if (report.counts_against_agreement) {
       row.failed += 1;
       if (row.smallest_failed === null || size < row.smallest_failed) row.smallest_failed = size;
@@ -199,8 +219,10 @@ const out = {
   counts_against_agreement: COUNTS_AGAINST_AGREEMENT,
   method: ('Assay cannot read a receipt from inside itself, so every report is a claim until '
     + 'something checks it. Each one here was fetched from the chain, confirmed to have been sent '
-    + 'to Assay, and its outcome taken from the receipt rather than from the label it was filed '
-    + 'under. Only outcomes that bear on agreement move the frontier.'),
+    + 'to Assay, its outcome taken from the receipt rather than the label it was filed under, and '
+    + 'its payload size, bound field count and mode read out of the probe call it cites rather '
+    + 'than from what the report said about itself. Only outcomes that bear on agreement move the '
+    + 'frontier, and they move it at the dimensions the calldata proves.'),
   frontier: frontier(runs, checked),
   reports: checked,
 };

@@ -316,23 +316,34 @@ el('example').onclick = (e) => { e.preventDefault(); el('q').value = EXAMPLE; lo
     el('verified').innerHTML = `<p class="loading bad">Could not read the verification: ${esc(e.message)}</p>`;
   }
 
+  // The frontier the page publishes is the receipt-verified one, built by
+  // scripts/verify_reports.mjs from calldata and receipts. The contract's own
+  // get_frontier is built from whatever labels reports arrived with, and one of
+  // ours was wrong, so publishing that one would be publishing the error.
   try {
-    const frontier = JSON.parse(await client.readContract({
-      address: ASSAY, functionName: 'get_frontier', args: [],
-    }));
+    const checked = await (await fetch('verified_reports.json')).json();
     el('assay').className = '';
     el('assay').innerHTML = `
+      <p class="note">Built from receipts and probe calldata, not from what the reports said
+      about themselves. A payload size only appears here if the probe's own call carried it.</p>
       <div class="scroll"><table>
         <thead><tr><th>Mode</th><th>Bound fields</th><th>Largest that agreed</th>
-          <th>Smallest that failed</th><th>Observations</th></tr></thead>
-        <tbody>${frontier.frontier.map((r) => `
+          <th>Smallest that broke agreement</th><th>Observations</th><th>Set aside</th></tr></thead>
+        <tbody>${checked.frontier.map((r) => `
           <tr><td><span class="pill muted">${esc(r.mode)}</span></td>
           <td>${r.bound_fields}</td>
           <td class="good">${r.largest_agreed ?? '—'}</td>
-          <td>${r.smallest_failed ?? '<span class="dim">none yet</span>'}</td>
-          <td class="muted">${r.observations}</td></tr>`).join('')
-      || '<tr><td colspan="5" class="muted">no probes yet</td></tr>'}</tbody>
-      </table></div>`;
+          <td class="${r.smallest_failed == null ? '' : 'bad'}">${
+            r.smallest_failed ?? '<span class="dim">none yet</span>'}</td>
+          <td class="muted">${r.observations}</td>
+          <td class="muted">${r.set_aside || '—'}</td></tr>`).join('')
+      || '<tr><td colspan="6" class="muted">no probes yet</td></tr>'}</tbody>
+      </table></div>
+      <p class="note dim">Set aside means a verified failure that says nothing about agreement:
+      the queue never voted on it, or it timed out, or the contract raised. Checked
+      ${new Date(checked.checked_at).toISOString().slice(0, 16)}Z.
+      A largest that agreed is a payload that agreed at least once, not one that always will.
+      Read the observation count before reading anything else.</p>`;
   } catch (e) {
     el('assay').className = '';
     el('assay').innerHTML = `<p class="loading bad">Could not read the lab: ${esc(e.message)}</p>`;

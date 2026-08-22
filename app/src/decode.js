@@ -78,74 +78,176 @@ export function leaderSaid(tx) {
 
 // Whether the leader's answer could be read, as its own fact.
 //
-// A round with no equivalence output is NONE rather than UNREADABLE: a
-// deterministic write never had a model answer to decode, and counting it as a
-// decode failure would make every ordinary transaction look broken.
+// Three states, and the middle one is where an earlier version of this went
+// wrong. Treating "not JSON" as a decode failure excluded every round on the
+// network at once, because most contracts do not return JSON and were never
+// meant to. A rate computed that way is not stricter, it is empty.
+//
+//   NONE        no equivalence output. A deterministic round never had a model
+//               answer to decode. The node writes the literal word "padded"
+//               into an eight byte placeholder for these, which is what that
+//               string is when it turns up in a receipt.
+//   READABLE    the output decodes: as a tagged value, or as a JSON object.
+//   UNREADABLE  there is a real output and neither reading works. This is the
+//               parse failure that must not count as agreement, because nobody
+//               can say what was agreed on.
 export function readability(tx) {
   const bytes = bytesOf(tx && tx.eqBlocksOutputs);
   if (!bytes || bytes.length < 6) return READ.NONE;
-  return leaderSaid(tx) ? READ.READABLE : READ.UNREADABLE;
+
+  let text = '';
+  try {
+    text = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+  } catch {
+    text = '';
+  }
+  // The placeholder, not an answer.
+  if (bytes.length <= 12 && text.includes('padded')) return READ.NONE;
+
+  if (leaderSaid(tx)) return READ.READABLE;
+
+  // Not JSON, which is ordinary. Decodable as a tagged value is still readable.
+  for (let start = 0; start < Math.min(bytes.length, 10); start += 1) {
+    const parsed = readValue(bytes, start);
+    if (parsed && parsed.value !== null && parsed.value !== undefined) return READ.READABLE;
+  }
+  return READ.UNREADABLE;
 }
 
-// The call that opened the round, read out of the calldata.
+// The calldata, decoded properly.
 //
-// GenLayer packs the method name and arguments into bytes with no schema I could
-// find published, so this does not claim to decode the format. It finds the key,
-// reads the tag byte after it, and shifts that byte right by three to get the
-// length of the value. Worked out from real rounds: 0x34 sits before a six
-// character method name, 0x0c before a one character argument.
-export function readCall(hex) {
-  if (!hex || String(hex).length < 6) return null;
-  const bytes = bytesOf(hex);
-  if (!bytes) return null;
+// GenLayer packs the call as a small tagged structure and I could find no
+// published schema, so this was worked out from real transactions and is
+// checked against captured ones in tests/fixtures.
+//
+// Each value begins with a LEB128 varint. Its low three bits are the type and
+// the rest is a length or a count:
+//
+//   type 4  string, length bytes follow
+//   type 5  array, that many values follow
+//   type 6  map, that many key and value pairs follow
+//
+// Map keys are different: a single byte holding the key length, then the key.
+// That asymmetry is why an earlier heuristic version read the method name
+// correctly and returned no arguments at all: it applied the value rule to
+// everything and the argument list quietly came back empty.
 
-  const ascii = (from, len) => {
-    let out = '';
-    for (let i = from; i < from + len && i < bytes.length; i += 1) {
-      const b = bytes[i];
-      if (b < 0x20 || b > 0x7e) return null;
-      out += String.fromCharCode(b);
-    }
-    return out.length === len ? out : null;
-  };
-  const find = (word) => {
-    for (let i = 0; i + word.length <= bytes.length; i += 1) {
-      if (ascii(i, word.length) === word) return i;
-    }
-    return -1;
-  };
-  const valueAfter = (word) => {
-    const at = find(word);
-    if (at < 0) return null;
-    const tag = bytes[at + word.length];
-    if (tag === undefined) return null;
-    const length = tag >> 3;
-    if (length <= 0 || length > 64) return null;
-    return ascii(at + word.length + 1, length);
-  };
-
-  const method = valueAfter('method');
-  if (!method) return null;
-
-  // Arguments follow the same shape, one after another, after the args key.
-  const args = [];
-  const argsAt = find('args');
-  if (argsAt >= 0) {
-    let cursor = argsAt + 4;
-    // One byte announces the sequence itself before the first value.
-    cursor += 1;
-    for (let guard = 0; guard < 16; guard += 1) {
-      const tag = bytes[cursor];
-      if (tag === undefined) break;
-      const length = tag >> 3;
-      if (length <= 0 || length > 64) break;
-      const value = ascii(cursor + 1, length);
-      if (value === null) break;
-      args.push(value);
-      cursor += 1 + length;
-    }
+function varint(bytes, at) {
+  let value = 0;
+  let shift = 0;
+  let i = at;
+  while (i < bytes.length) {
+    const byte = bytes[i];
+    value |= (byte & 0x7f) << shift;
+    i += 1;
+    if ((byte & 0x80) === 0) return { value, next: i };
+    shift += 7;
+    if (shift > 28) return null;
   }
-  return { method, args };
+  return null;
+}
+
+function readValue(bytes, at) {
+  const tag = varint(bytes, at);
+  if (!tag) return null;
+  const type = tag.value & 7;
+  const size = tag.value >> 3;
+  let i = tag.next;
+
+  if (type === 4) {
+    if (i + size > bytes.length) return null;
+    let text = '';
+    for (let k = 0; k < size; k += 1) text += String.fromCharCode(bytes[i + k]);
+    return { value: text, next: i + size };
+  }
+  if (type === 5) {
+    const items = [];
+    for (let k = 0; k < size; k += 1) {
+      const item = readValue(bytes, i);
+      if (!item) return null;
+      items.push(item.value);
+      i = item.next;
+    }
+    return { value: items, next: i };
+  }
+  if (type === 6) {
+    const out = {};
+    for (let k = 0; k < size; k += 1) {
+      const keyLength = bytes[i];
+      if (keyLength === undefined || i + 1 + keyLength > bytes.length) return null;
+      let key = '';
+      for (let c = 0; c < keyLength; c += 1) key += String.fromCharCode(bytes[i + 1 + c]);
+      i += 1 + keyLength;
+      const item = readValue(bytes, i);
+      if (!item) return null;
+      out[key] = item.value;
+      i = item.next;
+    }
+    return { value: out, next: i };
+  }
+  // Anything else is a shape this decoder has never seen. Say so rather than
+  // guessing: a wrong guess here becomes a wrong claim on the page.
+  return null;
+}
+
+// The call that opened the round: its method and its arguments.
+export function readCall(hex) {
+  const bytes = bytesOf(hex);
+  if (!bytes || bytes.length < 4) return null;
+
+  // The structure does not always start at byte 0; there is a short envelope in
+  // front of it on some transactions. Find the first offset that parses into a
+  // map carrying a method.
+  for (let start = 0; start < Math.min(bytes.length, 8); start += 1) {
+    const parsed = readValue(bytes, start);
+    if (!parsed || typeof parsed.value !== 'object' || Array.isArray(parsed.value)) continue;
+    const method = parsed.value.method;
+    if (typeof method !== 'string' || !method) continue;
+    const args = Array.isArray(parsed.value.args) ? parsed.value.args : [];
+    return { method, args: args.map((a) => (typeof a === 'string' ? a : String(a))) };
+  }
+  return null;
+}
+
+// What a probe actually asked for, taken from its own calldata.
+//
+// A report says "this failed at 3500 characters with one bound field". Nothing
+// stopped it saying that about a probe that carried twelve thousand. Binding the
+// report to the call it cites is what makes the reported dimensions checkable
+// rather than merely stated, and Assay's probe signature is
+// probe(source_url, evidence_chars, bound_fields, mode).
+export function probeDimensions(tx) {
+  const call = readCall((tx && (tx.txCalldata || tx.txData)) || null);
+  if (!call || call.method !== 'probe' || call.args.length < 4) return null;
+  const [source_url, evidence_chars, bound_fields, mode] = call.args;
+  const chars = Number(evidence_chars);
+  const bound = Number(bound_fields);
+  if (!Number.isFinite(chars) || !Number.isFinite(bound)) return null;
+  return { source_url, evidence_chars: chars, bound_fields: bound, mode: String(mode) };
+}
+
+// Whether a report's own numbers match the probe it cites.
+//
+// The frontier is drawn on payload size and bound field count, so a report that
+// names the wrong ones is not slightly off, it is a measurement of something
+// else entered on this chart. Returns the list of disagreements, empty when the
+// report and the calldata say the same thing.
+export function dimensionMismatches(report, dims) {
+  if (!dims) return ['the calldata does not decode as a probe call'];
+  const out = [];
+  const chars = Number(report.evidence_chars);
+  const bound = Number(report.bound_fields);
+  const mode = String(report.mode || '').toUpperCase();
+  if (chars !== dims.evidence_chars) {
+    out.push(`evidence_chars reported ${chars}, calldata says ${dims.evidence_chars}`);
+  }
+  if (bound !== dims.bound_fields) {
+    out.push(`bound_fields reported ${bound}, calldata says ${dims.bound_fields}`);
+  }
+  if (mode !== String(dims.mode).toUpperCase()) {
+    out.push(`mode reported ${mode}, calldata says ${dims.mode}`);
+  }
+  return out;
 }
 
 // The agreement rate, and the rule about what may go into it.
