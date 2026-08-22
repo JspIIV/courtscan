@@ -22,6 +22,13 @@ had already been handed out as evidence and quietly opened the front page
 instead, because nothing read the query string. A case record nobody can cite is
 half a record.
 
+**A case is linkable.** `?round=0x…` and `?address=0x…` open that record
+directly, and looking one up or clicking one in a table puts it in the address
+bar. This was missing for longer than it should have been: a link of that form
+had already been handed out as evidence and quietly opened the front page
+instead, because nothing read the query string. A case record nobody can cite is
+half a record.
+
 ## Verification, and what it caught
 
 A steward objected that unverified failure reports and malformed model outputs
