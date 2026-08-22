@@ -168,6 +168,7 @@ export function wireLinks() {
     link.onclick = (e) => {
       e.preventDefault();
       el('q').value = link.dataset.contract;
+      window.history.replaceState(null, '', `?address=${link.dataset.contract}`);
       if (handlers.contract) handlers.contract(link.dataset.contract);
       el('q').scrollIntoView({ block: 'start', behavior: 'smooth' });
     };
@@ -176,6 +177,7 @@ export function wireLinks() {
     link.onclick = (e) => {
       e.preventDefault();
       el('q').value = link.dataset.round;
+      window.history.replaceState(null, '', `?round=${link.dataset.round}`);
       if (handlers.round) handlers.round(link.dataset.round);
       el('q').scrollIntoView({ block: 'start', behavior: 'smooth' });
     };

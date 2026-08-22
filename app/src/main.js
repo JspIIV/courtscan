@@ -193,9 +193,37 @@ function lookup() {
   return undefined;
 }
 
-el('go').onclick = lookup;
-el('q').onkeydown = (e) => { if (e.key === 'Enter') lookup(); };
-el('example').onclick = (e) => { e.preventDefault(); el('q').value = EXAMPLE; lookup(); };
+el('go').onclick = () => { lookup(); remember_url(); };
+el('q').onkeydown = (e) => { if (e.key === 'Enter') { lookup(); remember_url(); } };
+el('example').onclick = (e) => {
+  e.preventDefault(); el('q').value = EXAMPLE; lookup(); remember_url();
+};
+
+// A looked up case has to be linkable.
+//
+// This was missing, and it mattered: a link of the form ?round=0x… was handed
+// out as evidence and quietly opened the front page instead, because nothing
+// ever read the query string. A case record nobody can link to is a case record
+// nobody can cite.
+function remember_url() {
+  const q = el('q').value.trim();
+  const key = /^0x[0-9a-fA-F]{64}$/.test(q) ? 'round'
+    : (/^0x[0-9a-fA-F]{40}$/.test(q) ? 'address' : null);
+  const url = key ? `?${key}=${q}` : window.location.pathname;
+  window.history.replaceState(null, '', url);
+}
+
+function openFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const wanted = params.get('round') || params.get('address');
+  if (!wanted) return;
+  el('q').value = wanted;
+  lookup();
+}
+
+// And a link that arrives with a case in it opens that case.
+openFromUrl();
+window.addEventListener('popstate', openFromUrl);
 
 // --------------------------------------------------------------------- data
 
