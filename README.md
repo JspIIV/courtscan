@@ -304,3 +304,41 @@ laboratory has not yet made a round fail on purpose. Every failure it has
 recorded is scheduling noise, set aside from the frontier. The one real
 agreement failure behind this whole project happened in the wild, in a contract
 doing something the probe does not yet do.
+
+## Round shapes: which kinds of round actually land
+
+Courtscan reads rounds other contracts happened to produce. `contracts/roundshapes.py`
+produces them on purpose, in three shapes, so the difference can be counted
+rather than guessed at.
+
+Same URL, same storage write, same return shape in all three. The only thing
+that varies is what the round contains.
+
+Live on GenLayer Studionet at `0x6E3589463f576C02ed4929C139353b49E6d1cdcE`.
+Raw dataset: [`results/round_shapes.json`](results/round_shapes.json).
+
+| shape | landed | median | spread |
+|---|---|---|---|
+| deterministic, no round | 8 of 8 | 40s | 38 to 44 |
+| one web fetch under `strict_eq` | 8 of 8 | 41s | 35 to 45 |
+| the same fetch, then one model question | 8 of 8 | 56s | 44 to 77 |
+
+**Twenty four of twenty four landed. None failed.** Across those rounds the
+validators cast 58 `agree` votes and 38 `idle`, so roughly two in five validator
+slots sat out without that costing a single round.
+
+**This corrects something we had published.** Working on other contracts we saw a
+round that fetched a page and then reasoned over it come back `TIMEOUT`, and we
+wrote that up as a property of rounds that do both. It is not. That timeout was
+on testnet-asimov, over a page of fetched text with a long question attached. On
+Studionet, with a small document and a one sentence question, the same shape
+lands every time.
+
+What the measurement does support is narrower and duller: reasoning costs about
+fifteen seconds at the median, and much more than that at the tail. The slowest
+deterministic round finished in 44 seconds and the slowest reasoning round took
+77. Splitting fetching from reasoning is still worth doing for a contract that
+moves money, because the tail is where a round runs out of budget, but the
+justification is variance rather than certain failure.
+
+The anecdote was one observation. This is twenty four, and it disagrees with us.

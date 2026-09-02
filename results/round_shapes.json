@@ -1,0 +1,399 @@
+{
+  "contract": "0x6E3589463f576C02ed4929C139353b49E6d1cdcE",
+  "network": "GenLayer Studionet",
+  "source": "https://api.github.com/repos/JspIIV/courtscan",
+  "measured_at": "2026-09-02T11:23:20.781Z",
+  "runs_per_shape": 8,
+  "method": "Same URL, same storage write, same return shape in all three. Only the contents of the round differ. A run counts as landed when the state change survived, read from the receipt rather than from the status word.",
+  "summary": {
+    "deterministic": {
+      "attempted": 8,
+      "landed": 8,
+      "lost": 0,
+      "median_seconds": 40,
+      "outcomes": {
+        "SUCCESS": 8
+      }
+    },
+    "fetch_only": {
+      "attempted": 8,
+      "landed": 8,
+      "lost": 0,
+      "median_seconds": 41,
+      "outcomes": {
+        "SUCCESS": 8
+      }
+    },
+    "fetch_then_reason": {
+      "attempted": 8,
+      "landed": 8,
+      "lost": 0,
+      "median_seconds": 56,
+      "outcomes": {
+        "SUCCESS": 8
+      }
+    }
+  },
+  "attempts": [
+    {
+      "shape": "deterministic",
+      "run": 1,
+      "tx": "0x090521318f05db09e89af3c8186cee40bd23afe20040d1a47354840f7bf8f10e",
+      "execution": "SUCCESS",
+      "votes": [
+        "idle",
+        "agree",
+        "idle",
+        "agree"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":9,\"shape\":\"deterministic\",\"detail\":\"https://api.github.com/repos/JspIIV/cour\"}",
+      "seconds": 40
+    },
+    {
+      "shape": "deterministic",
+      "run": 2,
+      "tx": "0xa9d1852265bdd9a12483a951d4c7cbef97c28befb260206e234a113823dadcb6",
+      "execution": "SUCCESS",
+      "votes": [
+        "idle",
+        "agree",
+        "agree",
+        "agree"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":10,\"shape\":\"deterministic\",\"detail\":\"https://api.github.com/repos/JspIIV/cour\"}",
+      "seconds": 40
+    },
+    {
+      "shape": "deterministic",
+      "run": 3,
+      "tx": "0x44d1a1ad0d59c8ec0a57012d03f08d782bc4bcb14f6e66d1dfaa010d999f6658",
+      "execution": "SUCCESS",
+      "votes": [
+        "agree",
+        "idle",
+        "agree",
+        "agree"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":11,\"shape\":\"deterministic\",\"detail\":\"https://api.github.com/repos/JspIIV/cour\"}",
+      "seconds": 44
+    },
+    {
+      "shape": "deterministic",
+      "run": 4,
+      "tx": "0xbfd4096c80d33f3a98ef0620a83731a20c944635f561beb30751eb2aa08e6eb2",
+      "execution": "SUCCESS",
+      "votes": [
+        "agree",
+        "agree",
+        "agree",
+        "agree"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":12,\"shape\":\"deterministic\",\"detail\":\"https://api.github.com/repos/JspIIV/cour\"}",
+      "seconds": 38
+    },
+    {
+      "shape": "deterministic",
+      "run": 5,
+      "tx": "0xd7cffc6b2e00889f7bfbfbee266c6d01a3bb93cc1452d5c792e1e881d09ce1d4",
+      "execution": "SUCCESS",
+      "votes": [
+        "idle",
+        "agree",
+        "agree",
+        "idle"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":13,\"shape\":\"deterministic\",\"detail\":\"https://api.github.com/repos/JspIIV/cour\"}",
+      "seconds": 40
+    },
+    {
+      "shape": "deterministic",
+      "run": 6,
+      "tx": "0x9dfa2a831b55e9e7c4ac485a532a50a9db7b74e92fb98d0a45fee4e9cb59cc02",
+      "execution": "SUCCESS",
+      "votes": [
+        "agree",
+        "idle",
+        "idle",
+        "agree"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":14,\"shape\":\"deterministic\",\"detail\":\"https://api.github.com/repos/JspIIV/cour\"}",
+      "seconds": 40
+    },
+    {
+      "shape": "deterministic",
+      "run": 7,
+      "tx": "0xe4767c5ccdff04e47e3e2386dc6c06043bcfb6f96e51011b373ef61fead21c41",
+      "execution": "SUCCESS",
+      "votes": [
+        "agree",
+        "idle",
+        "agree",
+        "idle"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":15,\"shape\":\"deterministic\",\"detail\":\"https://api.github.com/repos/JspIIV/cour\"}",
+      "seconds": 40
+    },
+    {
+      "shape": "deterministic",
+      "run": 8,
+      "tx": "0x8600b5ef2ecca11bfd9d1e073e3e0c5804658663b27bb4722e5dfdba7ff0a36e",
+      "execution": "SUCCESS",
+      "votes": [
+        "idle",
+        "agree",
+        "idle",
+        "agree"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":16,\"shape\":\"deterministic\",\"detail\":\"https://api.github.com/repos/JspIIV/cour\"}",
+      "seconds": 40
+    },
+    {
+      "shape": "fetch_only",
+      "run": 1,
+      "tx": "0x94c88598eb46bbd220518569a94e8c89e5dcad247cc9d2fb4f9d88ae54e24e9e",
+      "execution": "SUCCESS",
+      "votes": [
+        "idle",
+        "agree",
+        "agree",
+        "idle"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":17,\"shape\":\"fetch_only\",\"detail\":\"HTTP_200\"}",
+      "seconds": 42
+    },
+    {
+      "shape": "fetch_only",
+      "run": 2,
+      "tx": "0x43eb379fa5f5b8bcacc8550c873864c4c84ed34471d3da7a83213f47779b750f",
+      "execution": "SUCCESS",
+      "votes": [
+        "agree",
+        "idle",
+        "idle",
+        "agree"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":18,\"shape\":\"fetch_only\",\"detail\":\"HTTP_200\"}",
+      "seconds": 40
+    },
+    {
+      "shape": "fetch_only",
+      "run": 3,
+      "tx": "0x707defba38cf72905d65b84d8a84cc26448decd4a7c062d25d7a724ec59a3797",
+      "execution": "SUCCESS",
+      "votes": [
+        "agree",
+        "idle",
+        "agree",
+        "idle"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":19,\"shape\":\"fetch_only\",\"detail\":\"HTTP_200\"}",
+      "seconds": 41
+    },
+    {
+      "shape": "fetch_only",
+      "run": 4,
+      "tx": "0x33bb2bd9359797fc56c790033fc7325d9ea7ef5da1a050ad8174e862d94543bb",
+      "execution": "SUCCESS",
+      "votes": [
+        "agree",
+        "agree",
+        "idle",
+        "idle"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":20,\"shape\":\"fetch_only\",\"detail\":\"HTTP_200\"}",
+      "seconds": 45
+    },
+    {
+      "shape": "fetch_only",
+      "run": 5,
+      "tx": "0xea232a3b7f5b62467fe9894aeead907a2231ded13048b06dea865579cfa36f55",
+      "execution": "SUCCESS",
+      "votes": [
+        "idle",
+        "idle",
+        "agree",
+        "agree"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":21,\"shape\":\"fetch_only\",\"detail\":\"HTTP_200\"}",
+      "seconds": 40
+    },
+    {
+      "shape": "fetch_only",
+      "run": 6,
+      "tx": "0x57b9774471044f743564508d3068666d5e2134d9a6ed52fe20936aca196eb1d1",
+      "execution": "SUCCESS",
+      "votes": [
+        "agree",
+        "agree",
+        "agree",
+        "idle"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":22,\"shape\":\"fetch_only\",\"detail\":\"HTTP_200\"}",
+      "seconds": 35
+    },
+    {
+      "shape": "fetch_only",
+      "run": 7,
+      "tx": "0x04f075f2712beed738142857999aeb18442bde41e04330defbbea3e915875235",
+      "execution": "SUCCESS",
+      "votes": [
+        "idle",
+        "agree",
+        "agree",
+        "agree"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":23,\"shape\":\"fetch_only\",\"detail\":\"HTTP_200\"}",
+      "seconds": 45
+    },
+    {
+      "shape": "fetch_only",
+      "run": 8,
+      "tx": "0x601ec207676a26210a616fc70deb86edc0916ad41b911a58ba430e12032400cc",
+      "execution": "SUCCESS",
+      "votes": [
+        "agree",
+        "idle",
+        "agree",
+        "agree"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":24,\"shape\":\"fetch_only\",\"detail\":\"HTTP_200\"}",
+      "seconds": 41
+    },
+    {
+      "shape": "fetch_then_reason",
+      "run": 1,
+      "tx": "0x52fd41a5c896668aad1b5213dae47f651ce3fcdf390887e5cfa450925204d33f",
+      "execution": "SUCCESS",
+      "votes": [
+        "idle",
+        "agree",
+        "agree",
+        "agree"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":25,\"shape\":\"fetch_then_reason\",\"detail\":\"YES\"}",
+      "seconds": 57
+    },
+    {
+      "shape": "fetch_then_reason",
+      "run": 2,
+      "tx": "0x2f9396f4e929eed0b6dbf0e8aa9422f53600a934a2eaacaece28cac80fa5d389",
+      "execution": "SUCCESS",
+      "votes": [
+        "agree",
+        "agree",
+        "idle",
+        "idle"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":26,\"shape\":\"fetch_then_reason\",\"detail\":\"YES\"}",
+      "seconds": 44
+    },
+    {
+      "shape": "fetch_then_reason",
+      "run": 3,
+      "tx": "0xcf0c577b60b4d2c29168d75cdc3c4a4e9d6ee0b8da6ef9d33a28f771163ded21",
+      "execution": "SUCCESS",
+      "votes": [
+        "agree",
+        "agree",
+        "agree",
+        "idle"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":27,\"shape\":\"fetch_then_reason\",\"detail\":\"YES\"}",
+      "seconds": 45
+    },
+    {
+      "shape": "fetch_then_reason",
+      "run": 4,
+      "tx": "0xa47b0c7683652869ef1d9c183169ed10b0677633a8eb21e5c5df9f1810d3b2bd",
+      "execution": "SUCCESS",
+      "votes": [
+        "agree",
+        "idle",
+        "agree",
+        "idle"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":28,\"shape\":\"fetch_then_reason\",\"detail\":\"YES\"}",
+      "seconds": 56
+    },
+    {
+      "shape": "fetch_then_reason",
+      "run": 5,
+      "tx": "0x2718e9da2bfda1ba95370b28a7c1e4bd730a20760fce20fa2f30cedec12eb6ab",
+      "execution": "SUCCESS",
+      "votes": [
+        "agree",
+        "agree",
+        "agree",
+        "idle"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":29,\"shape\":\"fetch_then_reason\",\"detail\":\"YES\"}",
+      "seconds": 67
+    },
+    {
+      "shape": "fetch_then_reason",
+      "run": 6,
+      "tx": "0x2726bfdf96e9bb3cb1206c0fc5b5bad42cb0bc03f2883ad722495c647442ca05",
+      "execution": "SUCCESS",
+      "votes": [
+        "agree",
+        "idle",
+        "agree",
+        "idle"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":30,\"shape\":\"fetch_then_reason\",\"detail\":\"YES\"}",
+      "seconds": 44
+    },
+    {
+      "shape": "fetch_then_reason",
+      "run": 7,
+      "tx": "0xbfa1e590d823a6f66892a6f846e6bc533eedc28aa98af93c8a744aaa055ecb1e",
+      "execution": "SUCCESS",
+      "votes": [
+        "agree",
+        "agree",
+        "idle",
+        "idle"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":31,\"shape\":\"fetch_then_reason\",\"detail\":\"YES\"}",
+      "seconds": 77
+    },
+    {
+      "shape": "fetch_then_reason",
+      "run": 8,
+      "tx": "0x5083b0d21d0c60c095c3478993147d1ce1908c101457edf60b3c6502a9de72f8",
+      "execution": "SUCCESS",
+      "votes": [
+        "agree",
+        "agree",
+        "idle",
+        "idle"
+      ],
+      "landed": true,
+      "returned": "{\"ok\":true,\"index\":32,\"shape\":\"fetch_then_reason\",\"detail\":\"YES\"}",
+      "seconds": 56
+    }
+  ]
+}
