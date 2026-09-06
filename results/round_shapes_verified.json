@@ -1,0 +1,17 @@
+{
+  "contract": "0x6E3589463f576C02ed4929C139353b49E6d1cdcE",
+  "verified_at": "2026-09-06T16:31:30.433Z",
+  "method": "each measured run read back from chain by the storage index it reported writing to",
+  "contract_reports": {
+    "landed": 33,
+    "by_shape": {
+      "deterministic": 11,
+      "fetch_only": 11,
+      "fetch_then_reason": 11
+    },
+    "note": "this counts only what landed; a discarded round takes its own state change with it, so the failures are visible in the receipts rather than here"
+  },
+  "checked": 24,
+  "survived": 24,
+  "missing": []
+}

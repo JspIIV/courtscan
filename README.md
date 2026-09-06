@@ -317,6 +317,24 @@ that varies is what the round contains.
 Live on GenLayer Studionet at `0x6E3589463f576C02ed4929C139353b49E6d1cdcE`.
 Raw dataset: [`results/round_shapes.json`](results/round_shapes.json).
 
+Reproducing the measurement needs only this repository and a funded Studionet
+account. There is no dependency on any other local folder, and no password in
+the source:
+
+```bash
+npm install
+export COURTSCAN_KEYSTORES=~/.genlayer/keystores
+export COURTSCAN_KEY=padv COURTSCAN_PASS=...
+node scripts/round_shapes.mjs 0x6E3589463f576C02ed4929C139353b49E6d1cdcE 8
+```
+
+Checking the published result needs neither, because reads are free:
+
+```bash
+npm install
+node scripts/verify_round_shapes.mjs
+```
+
 | shape | landed | median | spread |
 |---|---|---|---|
 | deterministic, no round | 8 of 8 | 40s | 38 to 44 |
@@ -342,3 +360,37 @@ moves money, because the tail is where a round runs out of budget, but the
 justification is variance rather than certain failure.
 
 The anecdote was one observation. This is twenty four, and it disagrees with us.
+
+### Landed means the state survived, and here is that checked
+
+A steward asked, fairly, how "landed" was established. The first version of this
+measurement read it from the leader's returned payload, and that is not the same
+thing: a leader receipt says what the leader computed, not that the round was
+accepted or that the write it describes is still there. A discarded round can
+return a clean payload.
+
+So the claim is now checked against the contract rather than against the
+receipt. Every run's return carries the storage index the contract assigned when
+it appended the record, and `scripts/verify_round_shapes.mjs` reads each of
+those indexes back off the chain:
+
+```bash
+node scripts/verify_round_shapes.mjs
+```
+
+```
+The contract itself reports 33 records in storage:
+  11 deterministic, 11 fetch_only, 11 fetch_then_reason.
+
+Read back 24 of the measured runs by the storage index each one
+reported writing to. 24 came back with a record of the right shape.
+```
+
+Thirty three rather than twenty four because the contract also holds runs from
+before the measured set. The twenty four the table is drawn from are all still
+there, each found at the index it reported writing to.
+
+These are plain reads. They need no account, nothing is spent, and nothing about
+them depends on us: `size()` and `run_at(index)` are public views on a contract
+anybody can query. Result written to
+[`results/round_shapes_verified.json`](results/round_shapes_verified.json).

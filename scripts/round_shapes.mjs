@@ -5,17 +5,21 @@
 // is here, in what the node reports back to whoever sent the transaction.
 //
 //   node scripts/round_shapes.mjs <contract> [runs per shape]
-import { Wallet } from '../node_modules/ethers/lib.esm/index.js';
-import { createClient, createAccount } from '../../placard-app/node_modules/genlayer-js/dist/index.js';
-import { studionet } from '../../placard-app/node_modules/genlayer-js/dist/chains/index.js';
+import { Wallet } from 'ethers';
+import { createClient, createAccount } from 'genlayer-js';
+import { studionet } from 'genlayer-js/chains';
 import fs from 'fs';
 
 const ADDR = process.argv[2];
 const RUNS = Number(process.argv[3] || 8);
 const OUT = 'results/round_shapes.json';
-const KS = String.raw`C:\Users\ysfym\.genlayer\keystores`;
+const KS = process.env.COURTSCAN_KEYSTORES
+  || (process.env.HOME || process.env.USERPROFILE) + '/.genlayer/keystores';
+const KEY = process.env.COURTSCAN_KEY || 'padv';
+const PASS = process.env.COURTSCAN_PASS || '';
 
-const w = await Wallet.fromEncryptedJson(fs.readFileSync(`${KS}/padv.json`, 'utf8'), 'placard-test-adv-2026');
+const w = await Wallet.fromEncryptedJson(
+  fs.readFileSync(`${KS}/${KEY}.json`, 'utf8'), PASS);
 const client = createClient({ chain: studionet, account: createAccount(w.privateKey) });
 
 const SHAPES = ['deterministic', 'fetch_only', 'fetch_then_reason'];
