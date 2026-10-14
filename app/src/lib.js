@@ -10,6 +10,9 @@ import { testnetAsimov } from 'genlayer-js/chains';
 export const RPC = 'https://rpc-asimov.genlayer.com';
 export const CONSENSUS = '0x6CAFF6769d70824745AD895663409DC70aB5B28E';
 export const ASSAY = '0xbaBf2796De591Dfe9289b60bE68f4426449676fA';
+// The third axis lives in its own lean contract, because the combined source
+// exceeds the network's per-transaction deploy gas cap.
+export const ASSAY_COMPOSE = '0xe6c6D2a7DdDCd205a1145F8302f419c71773557c';
 export const REPO = 'https://github.com/JspIIV/courtscan';
 
 // The round that makes the case, offered so nobody has to go looking: it reads

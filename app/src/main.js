@@ -12,8 +12,8 @@
 // look identical everywhere else.
 import './style.css';
 import {
-  ASSAY, CONSENSUS, EXAMPLE, REPO, client, classify, el, esc, handlers,
-  leaderSaid, MEANING, readCall, remember, rpc, seenRounds, short, TONE, wireLinks,
+  ASSAY, ASSAY_COMPOSE, CONSENSUS, EXAMPLE, REPO, client, classify, el, esc, handlers,
+  leaderSaid, MEANING, readCall, readView, remember, rpc, seenRounds, short, TONE, wireLinks,
 } from './lib.js';
 import { showRound } from './round.js';
 
@@ -90,9 +90,24 @@ app.innerHTML = `
 
   <div class="panel" style="margin-top:12px"><div id="assay" class="loading">Reading the lab…</div></div>
 
+  <div class="finding" style="margin-top:12px">
+    <div class="finding-head">The third axis, now built</div>
+    <p>The hypothesis above is no longer only a hypothesis. A second lab contract,
+    <strong>AssayCompose</strong>, runs rounds where the validators must <strong>compose</strong> a
+    judgement under a clock, a decision, a named precedent, a holding sentence and a rationale, and
+    then agree it means the same, rather than pick fields from a list. <code>compose_budget</code> is
+    how many composed fields they must produce and agree on: the new load knob.</p>
+    <p class="note dim">A separate contract because the combined classify and compose source exceeds the
+    network's per-transaction deploy gas cap. Same honest asymmetry as Assay: a round that agreed wrote
+    itself in and cannot be faked; a round that did not is attested afterwards with its hash.</p>
+  </div>
+
+  <div class="panel" style="margin-top:12px"><div id="assay-compose" class="loading">Reading the composition axis…</div></div>
+
   <footer>
     <a href="${REPO}" target="_blank" rel="noreferrer">source</a>
     <span>Assay <code>${short(ASSAY)}</code></span>
+    <span>AssayCompose <code>${short(ASSAY_COMPOSE)}</code></span>
     <span>consensus <code>${short(CONSENSUS)}</code></span>
     <span>reads only, on GenLayer Asimov</span>
   </footer>`;
@@ -375,5 +390,42 @@ window.addEventListener('popstate', openFromUrl);
   } catch (e) {
     el('assay').className = '';
     el('assay').innerHTML = `<p class="loading bad">Could not read the lab: ${esc(e.message)}</p>`;
+  }
+
+  // The composition axis is read live from AssayCompose. Its agreements are
+  // written by the rounds themselves and cannot be faked; its failures are
+  // reports attested with a hash, so each links to its receipt to check.
+  try {
+    const [fr, stats] = await Promise.all([
+      readView(ASSAY_COMPOSE, 'get_frontier', []),
+      readView(ASSAY_COMPOSE, 'get_stats', []),
+    ]);
+    if (!fr || !stats) throw new Error('the contract did not answer');
+    const rows = (fr.frontier || []).map((r) => `
+      <tr><td>${r.compose_budget ?? r.load}</td>
+      <td class="good">${r.largest_agreed ?? '—'}</td>
+      <td class="${r.smallest_failed == null ? '' : 'bad'}">${
+        r.smallest_failed ?? '<span class="dim">none yet</span>'}</td>
+      <td class="muted">${r.observations}</td>
+      <td class="muted">${r.set_aside || '—'}</td></tr>`).join('');
+    const bracketed = (fr.frontier || []).some((r) => r.smallest_failed != null);
+    el('assay-compose').className = '';
+    el('assay-compose').innerHTML = `
+      <p class="note">Rounds where validators compose a judgement, graded by whether two independently
+      composed answers mean the same thing. Load here is <code>compose_budget</code>, how many composed
+      fields must agree.</p>
+      <div class="scroll"><table>
+        <thead><tr><th>Compose budget</th><th>Largest that agreed</th>
+          <th>Smallest that broke agreement</th><th>Observations</th><th>Set aside</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="5" class="muted">no composition probes yet</td></tr>'}</tbody>
+      </table></div>
+      <p class="note dim">${stats.rounds_that_agreed} agreed, ${stats.rounds_reported_failed} reported.
+      ${bracketed
+        ? 'A composition round has broken agreement: the frontier on this axis is no longer empty.'
+        : 'No composition round has broken agreement yet. The frontier reads an honest zero, the same as the other two axes, and the page says so rather than dressing it up.'}
+      Read live from the contract's own tally; agreements are self written and cannot be faked, failures are attested with a hash.</p>`;
+  } catch (e) {
+    el('assay-compose').className = '';
+    el('assay-compose').innerHTML = `<p class="loading bad">Could not read the composition axis: ${esc(e.message)}</p>`;
   }
 })();
