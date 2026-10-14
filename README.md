@@ -10,7 +10,8 @@ Those two look identical on an explorer. One is a verdict. The other is a verdic
 that never happened.
 
 * **Live:** [courtscan-five.vercel.app](https://courtscan-genlayer.vercel.app) — paste a round id, no wallet and no account
-* **Assay contract:** [`0xbaBf2796De591Dfe9289b60bE68f4426449676fA`](https://explorer-asimov.genlayer.com/address/0xbaBf2796De591Dfe9289b60bE68f4426449676fA) on GenLayer Asimov, chain id 4221
+* **Assay contract (classify axis):** [`0xbaBf2796De591Dfe9289b60bE68f4426449676fA`](https://explorer-asimov.genlayer.com/address/0xbaBf2796De591Dfe9289b60bE68f4426449676fA) on GenLayer Asimov, chain id 4221
+* **AssayCompose contract (composition axis):** [`0xe6c6D2a7DdDCd205a1145F8302f419c71773557c`](https://explorer-asimov.genlayer.com/address/0xe6c6D2a7DdDCd205a1145F8302f419c71773557c)
 
 ---
 
@@ -186,6 +187,35 @@ axis to build into the probe.
 
 Both numbers are on the site, side by side, with the count of observations behind
 each. Neither is presented as a law, including this one.
+
+## The third axis: composition
+
+That hypothesis is now built, in a second contract. `contracts/assay_compose.py`
+runs rounds where the validators do not pick from a list. They **compose** a
+judgement under a clock, a decision from a small set, a named precedent, a holding
+sentence, and a rationale, and then a round has to agree that two independently
+composed judgements mean the same thing. `compose_budget` is the new load knob:
+how many of those composed fields must be produced and agreed, in rising order of
+how much has to be written. Because composed prose cannot be matched character for
+character, the comparison is always the equivalence principle asking whether the
+substance matches, never an exact-string check.
+
+It is a separate contract on purpose. The combined classify and compose source is
+large enough that its deploy transaction exceeds the network's per transaction gas
+cap, which sits between 16M and 17M on Asimov, so the deploy is refused outright.
+The compose axis is its own lean contract instead, deployed at
+`0xe6c6D2a7DdDCd205a1145F8302f419c71773557c`. The same asymmetry still holds: a
+round that agreed wrote itself in and cannot be faked, a round that did not is
+attested afterwards with its transaction hash.
+
+The honest state of this axis, same as the other two: **no composition round has
+broken agreement yet.** The site reads the compose frontier live and says so. The
+one real agreement failure behind this whole project happened in the wild, in a
+contract composing a verdict, and reproducing it on purpose is the point of this
+axis. It has not happened yet, and the page shows that zero rather than dressing it
+up. Reproducing it cleanly needs a window where the testnet is actually voting:
+`scripts/assay_compose_sweep.mjs` (`SWEEP=trial|budget|size|full`) runs the probes
+and reports what came back, including what did not.
 
 ## How rounds are found
 
