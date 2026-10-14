@@ -13,6 +13,15 @@
     "what": "runs controlled consensus rounds so the point where agreement stops can be measured rather than guessed at",
     "consensus_round": "probe: STRICT uses gl.vm.run_nondet_unsafe with a custom validator comparing exactly the bound fields; COMPARATIVE describes the same condition in a principle string, so the two can be compared"
   },
+  "assay_compose": {
+    "contract": "contracts/assay_compose.py",
+    "class": "AssayCompose",
+    "address": "0xe6c6D2a7DdDCd205a1145F8302f419c71773557c",
+    "explorer": "https://explorer-asimov.genlayer.com/address/0xe6c6D2a7DdDCd205a1145F8302f419c71773557c",
+    "what": "the third axis: rounds where validators must COMPOSE a judgement under a clock (a decision, a named precedent, a holding sentence, a rationale) rather than choose fixed fields, so the cost of generating agreement can be measured",
+    "consensus_round": "probe_compose: always COMPARATIVE, since composed prose cannot be matched character for character; the principle asks whether two independently composed judgements mean the same thing. compose_budget 1..4 is how many composed fields must be produced and agreed",
+    "why_separate": "the combined classify and compose source exceeds the network's per-transaction deploy gas cap (between 16M and 17M), so the compose axis is its own lean contract"
+  },
   "the_round_that_makes_the_case": {
     "id": "0x938a593d62056696702c5db81a7f61c487a970ddfc4f1eece34e676062d21545",
     "reads_on_the_explorer_as": "FINALIZED",
